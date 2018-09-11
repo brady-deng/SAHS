@@ -9,9 +9,11 @@ if __name__ == '__main__':
     ######################
     #9-7classifiy
     ######################
-    data,label = function.load_data('f60-1.xlsx')
-    res = function.train_97(data,label,0.7,N)
-    print(res[1])
+    data,label = function.load_data('f60-1.xlsx',1)
+    # function.fea_ana(data,label)
+    # function.sample_dis(data,label,1)
+    res = function.train_911(data,label,0.2,1,5)
+    # print(res[1])
     ######################
     #classifiy
     ######################
@@ -33,10 +35,10 @@ if __name__ == '__main__':
     #######################
     #analyze
     #######################
-    # data,label = function.load_data("f30-1.xlsx")
+    # data,label = function.load_data("f60-1.xlsx")
     # function.data_analysis(data[0],label[0],0.2)
     # num_f = len(data[0][0,:])
-    # name = ['spstd','linemu','linebia','time93','timemean','mintomean','maxfre','interestfre','spdia1','spdia2','flowdia1','flowdia2']
+    # name = ['feature1','feature2','feature3']
     # for i in range(num_f):
     #     fig = plt.figure(i)
     #     sns.boxenplot(x = label[0],y = data[0][:,i])
