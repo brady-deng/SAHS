@@ -10,13 +10,22 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
-########################
-#读取特征xlsx文件
-#第一行是文字说明
-#23个被试存储在不同的sheet中
-########################
+###########################################
+#deng的SAHS数据集处理函数包
+#load_data读取MATLAB输出的特征集合xlsx文件
+#createdataset产生在时间轴上均匀切割分布的数据集合，可以使用交叉训练，不用担心冗余问题
+#parop超参数调优，可以返回各参数对应的分类结果，使用gridsearchcv方法
+#train_911针对于每个被试每一折数据的超参数寻优
+#train_912主要是为了与MATLAB对比，不涉及超参数寻优问题，用的参数与MATLAB相同
+#resana_911,train911与train912的结果都可以使用该函数
+#resana_913,超参数寻有结果使用该函数，parop
+###########################################
 def load_data(filename,N):
+    ########################
+    # 读取特征xlsx文件
+    # 第一行是文字说明
+    # 23个被试存储在不同的sheet中
+    ########################
 
     data = pd.read_excel(filename,sheet_name =None)
     data_train = []
@@ -98,7 +107,7 @@ def train_911(data,label,P,N,N_seg):
     # P训练集合比例
     # N待分类的被试数目
     # 数据切割段数
-    # 超参数寻优
+    # 针对于每个被试每一折数据的超参数寻优
     #######################
     ##########################
     # 准备分类器
