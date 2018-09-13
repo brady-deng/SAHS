@@ -7,18 +7,24 @@ import pandas as pd
 
 if __name__ == '__main__':
     #######################
+    # 9-13划分数据集
+    #######################
+    data,label = function.load_data('f60-1.xlsx',1)
+    data,label = function.createdataset(data,label,0.2,1,5)
+    function.parop(data,label,3,1)
+    #######################
     #9-12classify
     #######################
     ##############################
     # 超参数调优
     ##############################
-    data,label = function.load_data('f60-1.xlsx',1)
-    res = function.train_911(data,label,0.2,1,5)
-    print(res)
-    rea = function.resana911(res,['best_recall','best_precision'])
-    print(rea)
+    # data,label = function.load_data('f60-1.xlsx',1)
+    # res = function.train_911(data,label,0.2,1,5)
+    # print(res)
+    # rea = function.resana911(res,['best_recall','best_precision'])
+    # print(rea)
     ##############################
-    #与MATLAB进行对照
+    #912与MATLAB进行对照
     ##############################
     # data,label = function.load_data('f60-1.xlsx',1)
     # res = function.train_912(data,label,0.2,1,5)

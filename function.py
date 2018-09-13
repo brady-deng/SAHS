@@ -182,10 +182,78 @@ def train_911(data,label,P,N,N_seg):
                 res[i][str(clf[count])[0:3]][k].setdefault('best_precision_parm',tempclf2.best_params_)
                 # del temppre
                 del ltrain,ltest,dtrain,dtest
-
-
-
     return(res)
+def parop(data,label,l,N):
+    ###########################
+    #超参数调优，l：最后评价参数个数，N被试个数
+    ###########################
+    clf1 = SVC(class_weight='balanced')
+    par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
+    clf2 = GaussianNB()
+    par2 = {}
+    clf3 = AdaBoostClassifier()
+    par3 = {'n_estimators': [30, 35, 40, 45, 50, 55, 60], 'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0]}
+    clf = [clf1,clf2,clf3]
+    pars = [par1, par2, par3]
+    res = {}
+    scoring = ['accuracy','recall','precision']
+    for count in range(len(clf)):
+        res.setdefault(str(clf[count])[0:3],{})
+        for i in range(N):
+            res[str(clf[count])[0:3]].setdefault(i,{})
+            for scoler in scoring:
+                tempclf = GridSearchCV(clf[count],pars[count],cv = 5,scoring=scoler,n_jobs=4)
+                tempclf.fit(data[i],label[i])
+                score = tempclf.cv_results_
+                res[str(clf[count])[0:3]][i].setdefault(scoler,score['mean_test_score'])
+    return res
+
+
+
+
+
+def createdataset(data,label,P,N,N_seg):
+    #######################
+    # 输入项：
+    # data训练数据
+    # label标签
+    # P训练集合比例
+    # N待分类的被试数目
+    # 数据切割段数
+    # 产生一个将原始样本按时间轴均匀切割然后按时间排布抽取的数据集
+    #######################
+    ##########################
+    # 准备分类器
+    ##########################
+    dataset = []
+    labelset = []
+    for i in range(N):
+        templ = len(data[i])
+        l_seg = int(templ/N_seg)
+        l_segte = int(l_seg*P)
+        l_segtr = l_seg - l_segte
+        tempdata = []
+        templabel = []
+        dataset.append([])
+        labelset.append([])
+
+        for k in range(N_seg):
+            tempdata.append(data[i][k*l_seg+1:(k+1)*l_seg])
+            templabel.append(label[i][k*l_seg+1:(k+1)*l_seg])
+        for count2 in range(int(1/P)):
+            for k in range(N_seg):
+                temptrain = tempdata[k][count2*l_segte+1:(count2+1)*l_segte]
+                templatr = templabel[k][count2*l_segte+1:(count2+1)*l_segte]
+                if count2 == 0 and k == 0:
+                    dataset[i] = temptrain
+                    labelset[i] = templatr
+                else:
+                    dataset[i] = np.vstack((dataset[i],temptrain))
+                    labelset[i] = np.hstack((labelset[i],templatr))
+                del temptrain,templatr
+    return dataset,labelset
+
+
 def train_912(data,label,P,N,N_seg):
     #######################
     # 输入项：
@@ -199,7 +267,7 @@ def train_912(data,label,P,N,N_seg):
     ##########################
     # 准备分类器
     ##########################
-    clf1 = SVC(kernel='rbf',gamma=1,C=1.15,shrinking=True,max_iter=1e7,tol=1e-6,class_weight='balanced')
+    clf1 = SVC(kernel='rbf',gamma=1,C=1.15,shrinking=False,max_iter=1e7,class_weight='balanced')
     par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
     clf2 = GaussianNB()
     par2 = {}
@@ -290,10 +358,16 @@ def train_912(data,label,P,N,N_seg):
 
 
     return(res)
-def resana911(res,index):
+def resana911(res,N,index):
+#############################
+#res,超参数网格寻优结果
+#N，原始数据切割段数
+#index，评价指标内容
+#train911与train912的结果都可以使用该函数
+#############################
     l_subject = len(res)-1
     clfs = res[0].keys()
-    l_seg = res['l']
+    l_seg = N
     l_ind = len(index)
 
     rea = {}
@@ -308,6 +382,30 @@ def resana911(res,index):
                     temp.append(res[i][item][j][ind])
                 rea[i][item].append(np.mean(temp))
     return rea
+def resana913(res,N,index):
+#############################
+#res,超参数网格寻优结果
+#N，原始数据切割段数
+#index，评价指标内容
+#超参数寻有结果使用该函数
+#############################
+    l_clf = len(res)
+    clfs = list(res.keys())
+    l_subject = len(res[clfs[0]])
+    l_eva = len(res[clfs[0]][0].keys())
+    item_eva = list(res[clfs[0]][0].keys())
+    # l_par = len(res[clfs[0]][0][item_eva[0]])
+    rea = {}
+    for item in clfs:
+        rea.setdefault(item,{})
+        for i in range(l_subject):
+            rea[item].setdefault(str(i),{})
+            for count in range(len(res[item][i][item_eva[0]])):
+                rea[item][str(i)].setdefault(str(count),[])
+                for eva in item_eva:
+                    rea[item][str(i)][str(count)].append(res[item][i][eva][count])
+    return rea
+
 
 
 
