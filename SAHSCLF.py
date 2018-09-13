@@ -6,14 +6,33 @@ from sklearn.preprocessing import MinMaxScaler,StandardScaler,Normalizer
 import pandas as pd
 
 if __name__ == '__main__':
+    #######################
+    #9-12classify
+    #######################
+    ##############################
+    # 超参数调优
+    ##############################
+    data,label = function.load_data('f60-1.xlsx',1)
+    res = function.train_911(data,label,0.2,1,5)
+    print(res)
+    rea = function.resana911(res,['best_recall','best_precision'])
+    print(rea)
+    ##############################
+    #与MATLAB进行对照
+    ##############################
+    # data,label = function.load_data('f60-1.xlsx',1)
+    # res = function.train_912(data,label,0.2,1,5)
+    # ra = function.resana911(res,['accuracy','recall','precision'])
+    # print(ra)
     ######################
     #9-7classifiy
     ######################
-    data,label = function.load_data('f60-1.xlsx',1)
-    # function.fea_ana(data,label)
-    # function.sample_dis(data,label,1)
-    res = function.train_911(data,label,0.2,1,5)
-    # print(res[1])
+    # data,label = function.load_data('f60-1.xlsx',1)
+    # # function.fea_ana(data,label)
+    # # function.sample_dis(data,label,1)
+    # res = function.train_911(data,label,0.2,1,5)
+    # print(res)
+    # rea = function.resana911(res)
     ######################
     #classifiy
     ######################

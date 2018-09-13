@@ -40,10 +40,16 @@ def train_97(data,label,P,N):
     # N待分类的被试数目
     #######################
     clf1 = SVC(kernel = 'rbf',C = 0.5,gamma= 1,max_iter=1e7,tol=1e-5,cache_size=500,shrinking=False)
+    # par1 = {'C':[0.1,0.5,1,1.1,1.2,1.3,1.4,1.5,2.0,3.0]}
+    par1 = {'C':[0.9,1.0,1.1]}
     clf2 = GaussianNB()
+    par2 = {}
     clf3 = KNeighborsClassifier()
+    par3 = {'algorithm':('auto','ball_tree','kd_tree','brute'),'n_neighbors':[3,4,5,6,7]}
     clf4 = AdaBoostClassifier()
+    par4 = {'n_estimators':[30,35,40,45,50,55,60],'learning_rate':[0.1,0.2,0.5,0.8,1.0,1.2,1.5,2.0]}
     clf = [clf1,clf2,clf3,clf4]
+    par = [par1,par2,par3,par4]
     res = []
     for i in range(N):
         templ = len(data[i])
@@ -92,17 +98,26 @@ def train_911(data,label,P,N,N_seg):
     # P训练集合比例
     # N待分类的被试数目
     # 数据切割段数
+    # 超参数寻优
     #######################
     ##########################
     # 准备分类器
     ##########################
-    clf1 = SVC()
+    clf1 = SVC(class_weight='balanced')
+    par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
     clf2 = GaussianNB()
+    par2 = {}
     clf3 = AdaBoostClassifier()
-    clf4 = KNeighborsClassifier()
+    par3 = {'n_estimators': [30, 35, 40, 45, 50, 55, 60], 'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0]}
+    # clf4 = KNeighborsClassifier()
+    # par4 = {'algorithm': ('auto', 'ball_tree', 'kd_tree', 'brute'), 'n_neighbors': [3, 4, 5]}
     scaler = StandardScaler()
-    clf = [clf1,clf2,clf3,clf4]
+    # clf = [clf1,clf2,clf3]
+    # pars = [par1, par2, par3]
+    clf = [clf1]
+    pars = [par1]
     res = {}
+    res.setdefault('l',int(1/P))
     ##########################
     #准备训练集合与测试集合
     ##########################
@@ -118,51 +133,182 @@ def train_911(data,label,P,N,N_seg):
             tempdata.append(data[i][k*l_seg:(k+1)*l_seg])
             templabel.append(label[i][k*l_seg:(k+1)*l_seg])
 
+        for count in range(len(clf)):
+            res[i].setdefault(str(clf[count])[0:3], {})
+            for k in range(int(1/P)):
+                ind = np.zeros(l_seg)
+                ind[k*l_segte:(k+1)*l_segte]  = 1
+                indte = np.where(ind == 1)
+                # ind = np.ones(ind.shape[0]) - ind
+                indtr = np.where(ind == 0)
+                res[i][str(clf[count])[0:3]].setdefault(k,{})
 
-        for k in range(int(1/P)):
-            ind = np.zeros(l_seg)
-            ind[k*l_segte:(k+1)*l_segte]  = 1
-            indte = np.where(ind == 1)
-            # ind = np.ones(ind.shape[0]) - ind
-            indtr = np.where(ind == 0)
-            res[i].setdefault(k,{})
-            for count in range(int(1/P)):
-                temptrain = tempdata[count][indtr]
-                temptest = tempdata[count][indte]
-                templatr = templabel[count][indtr]
-                template = templabel[count][indte]
-                if count == 0:
-                    dtrain = temptrain
-                    dtest = temptest
-                    ltrain = templatr
-                    ltest = template
-                else:
-                    dtrain = np.vstack((dtrain,temptrain))
-                    dtest = np.vstack((dtest,temptest))
-                    ltrain = np.hstack((ltrain,templatr))
-                    ltest = np.hstack((ltest,template))
-                del temptrain,temptest,templatr,template
-            #######################
-            # 输入项标准化
-            #######################
-            scaler.fit(dtrain)
-            temptr = scaler.transform(dtrain)
-            tempte = scaler.transform(dtest)
-            #########################
-            #分类器训练与分类
-            #########################
-            for item in clf:
-                item.fit(temptr,ltrain)
-                temppre = item.predict(tempte)
-                res[i][k].setdefault(str(item)[0:3], [])
-                res[i][k][str(item)[0:3]].append(accuracy_score(ltest, temppre))
-                res[i][k][str(item)[0:3]].append(precision_score(ltest, temppre))
-                res[i][k][str(item)[0:3]].append(recall_score(ltest, temppre))
+                for count2 in range(int(1/P)):
+                    temptrain = tempdata[count2][indtr]
+                    temptest = tempdata[count2][indte]
+                    templatr = templabel[count2][indtr]
+                    template = templabel[count2][indte]
+                    if count2 == 0:
+                        dtrain = temptrain
+                        dtest = temptest
+                        ltrain = templatr
+                        ltest = template
+                    else:
+                        dtrain = np.vstack((dtrain,temptrain))
+                        dtest = np.vstack((dtest,temptest))
+                        ltrain = np.hstack((ltrain,templatr))
+                        ltest = np.hstack((ltest,template))
+                    del temptrain,temptest,templatr,template
+                #######################
+                # 输入项标准化
+                #######################
+                scaler.fit(dtrain)
+                temptr = scaler.transform(dtrain)
+                tempte = scaler.transform(dtest)
+                #########################
+                #分类器训练与分类
+                #########################
 
 
-                del temppre
-        del ltrain,ltest,dtrain,dtest
+                tempclf1 = GridSearchCV(clf[count],pars[count],'recall',n_jobs= 4)
+                tempclf2 = GridSearchCV(clf[count],pars[count],'roc_auc',n_jobs= 4)
+                tempclf1.fit(temptr,ltrain)
+                tempclf2.fit(temptr,ltrain)
+                # temppre = clf[i].predict(tempte)
+                res[i][str(clf[count])[0:3]].setdefault(k, {})
+                res[i][str(clf[count])[0:3]][k].setdefault('best_recall',tempclf1.best_score_)
+                res[i][str(clf[count])[0:3]][k].setdefault('best_recall_parm', tempclf1.best_params_)
+                res[i][str(clf[count])[0:3]][k].setdefault('best_precision',tempclf2.best_score_)
+                res[i][str(clf[count])[0:3]][k].setdefault('best_precision_parm',tempclf2.best_params_)
+                # del temppre
+                del ltrain,ltest,dtrain,dtest
+
+
+
     return(res)
+def train_912(data,label,P,N,N_seg):
+    #######################
+    # 输入项：
+    # data训练数据
+    # label标签
+    # P训练集合比例
+    # N待分类的被试数目
+    # 数据切割段数
+    # 与MATLAB对比
+    #######################
+    ##########################
+    # 准备分类器
+    ##########################
+    clf1 = SVC(kernel='rbf',gamma=1,C=1.15,shrinking=True,max_iter=1e7,tol=1e-6,class_weight='balanced')
+    par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
+    clf2 = GaussianNB()
+    par2 = {}
+    clf3 = AdaBoostClassifier()
+    par3 = {'n_estimators': [30, 35, 40, 45, 50, 55, 60], 'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0]}
+    # clf4 = KNeighborsClassifier()
+    # par4 = {'algorithm': ('auto', 'ball_tree', 'kd_tree', 'brute'), 'n_neighbors': [3, 4, 5]}
+    scaler = StandardScaler()
+    # clf = [clf1,clf2,clf3]
+    # pars = [par1, par2, par3]
+    clf = [clf1]
+    pars = [par1]
+    res = {}
+    res.setdefault('l',int(1/P))
+    ##########################
+    #准备训练集合与测试集合
+    ##########################
+    for i in range(N):
+        templ = len(data[i])
+        l_seg = int(templ/N_seg)
+        l_segte = int(l_seg*P)
+        l_segtr = l_seg - l_segte
+        tempdata = []
+        templabel = []
+        res.setdefault(i,{})
+        for k in range(N_seg):
+            tempdata.append(data[i][k*l_seg:(k+1)*l_seg])
+            templabel.append(label[i][k*l_seg:(k+1)*l_seg])
+
+        for count in range(len(clf)):
+            res[i].setdefault(str(clf[count])[0:3], {})
+            for k in range(int(1/P)):
+                ind = np.zeros(l_seg)
+                ind[k*l_segte:(k+1)*l_segte]  = 1
+                indte = np.where(ind == 1)
+                # ind = np.ones(ind.shape[0]) - ind
+                indtr = np.where(ind == 0)
+                res[i][str(clf[count])[0:3]].setdefault(k,{})
+
+                for count2 in range(int(1/P)):
+                    temptrain = tempdata[count2][indtr]
+                    temptest = tempdata[count2][indte]
+                    templatr = templabel[count2][indtr]
+                    template = templabel[count2][indte]
+                    if count2 == 0:
+                        dtrain = temptrain
+                        dtest = temptest
+                        ltrain = templatr
+                        ltest = template
+                    else:
+                        dtrain = np.vstack((dtrain,temptrain))
+                        dtest = np.vstack((dtest,temptest))
+                        ltrain = np.hstack((ltrain,templatr))
+                        ltest = np.hstack((ltest,template))
+                    del temptrain,temptest,templatr,template
+                #######################
+                # 输入项标准化
+                #######################
+                scaler.fit(dtrain)
+                temptr = scaler.transform(dtrain)
+
+                tempte = scaler.transform(dtest)
+                ########################
+                #输入不经标准化
+                ########################
+                # temptr = dtrain
+                # tempte = dtest
+                #########################
+                #分类器训练与分类
+                #########################
+
+
+                clf[count].fit(temptr,ltrain)
+                temppre = clf[count].predict(tempte)
+                tempacu = accuracy_score(ltest,temppre)
+                temprecall = recall_score(ltest,temppre)
+                tempprecision = precision_score(ltest,temppre)
+
+                # temppre = clf[i].predict(tempte)
+                res[i][str(clf[count])[0:3]].setdefault(k, {})
+                res[i][str(clf[count])[0:3]][k].setdefault('accuracy',tempacu)
+                res[i][str(clf[count])[0:3]][k].setdefault('recall', temprecall)
+                res[i][str(clf[count])[0:3]][k].setdefault('precision',tempprecision)
+
+                # del temppre
+                del ltrain,ltest,dtrain,dtest
+
+
+
+    return(res)
+def resana911(res,index):
+    l_subject = len(res)-1
+    clfs = res[0].keys()
+    l_seg = res['l']
+    l_ind = len(index)
+
+    rea = {}
+    for i in range(l_subject):
+        rea.setdefault(i,{})
+        for item in clfs:
+            rea[i].setdefault(item,[])
+
+            for ind in index:
+                temp = []
+                for j in range(l_seg):
+                    temp.append(res[i][item][j][ind])
+                rea[i][item].append(np.mean(temp))
+    return rea
+
 
 
 
