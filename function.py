@@ -18,7 +18,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #train_911针对于每个被试每一折数据的超参数寻优
 #train_912主要是为了与MATLAB对比，不涉及超参数寻优问题，用的参数与MATLAB相同
 #resana_911,train911与train912的结果都可以使用该函数
-#resana_913,超参数寻有结果使用该函数，parop
+#resana_913,parop超参数寻有结果使用该函数，#res,超参数网格寻优结果,#N，原始数据切割段数,#index，评价指标内容
 ###########################################
 def load_data(filename,N):
     ########################
@@ -190,20 +190,25 @@ def train_911(data,label,P,N,N_seg):
                 res[i][str(clf[count])[0:3]][k].setdefault('best_precision',tempclf2.best_score_)
                 res[i][str(clf[count])[0:3]][k].setdefault('best_precision_parm',tempclf2.best_params_)
                 # del temppre
-                del ltrain,ltest,dtrain,dtest
+                # del ltrain,ltest,dtrain,dtest
     return(res)
 def parop(data,label,l,N):
     ###########################
     #超参数调优，l：最后评价参数个数，N被试个数
     ###########################
     clf1 = SVC(class_weight='balanced')
-    par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
-    clf2 = GaussianNB()
-    par2 = {}
-    clf3 = AdaBoostClassifier()
-    par3 = {'n_estimators': [30, 35, 40, 45, 50, 55, 60], 'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0]}
-    clf = [clf1,clf2,clf3]
-    pars = [par1, par2, par3]
+    # par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
+    # par1 = {'C' : [1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.1],'gamma':[1.5,2.0,2.5]}
+    # par1 = {'C': [1, 2, 3, 4, 5, 6], 'gamma': [1.5, 2.5, 3.5, 4.5]}
+    par1 = {'C':[1.6,1.65,1.7,1.75,1.8],'gamma':[1.5,1.6,1.7,1.8,1.9,2.0,2.1]}
+    # clf2 = GaussianNB()
+    # par2 = {}
+    # clf3 = AdaBoostClassifier()
+    # par3 = {'n_estimators': [30, 35, 40, 45, 50, 55, 60], 'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0]}
+    # clf = [clf1,clf2,clf3]
+    # pars = [par1, par2, par3]
+    clf = [clf1]
+    pars = [par1]
     res = {}
     scoring = ['accuracy','recall','precision']
     for count in range(len(clf)):

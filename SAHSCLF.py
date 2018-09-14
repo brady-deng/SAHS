@@ -11,7 +11,9 @@ if __name__ == '__main__':
     #######################
     data,label = function.load_data('f60-1.xlsx',1)
     data,label = function.createdataset(data,label,0.2,1,5)
-    function.parop(data,label,3,1)
+    res = function.parop(data,label,3,1)
+    rea = function.resana913(res,5,['accuracy','recall','precision'])
+    print(rea)
     #######################
     #9-12classify
     #######################
