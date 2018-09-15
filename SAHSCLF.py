@@ -7,6 +7,12 @@ import pandas as pd
 
 if __name__ == '__main__':
     #######################
+    #9-15OB tree
+    #######################
+    # data,label = function.load_data('f60-1-3.xlsx',1)
+    # data,label = function.createdataset(data,label,0.2,1,5)
+
+    #######################
     # 9-13划分数据集
     #######################
     data,label = function.load_data('f60-1-3.xlsx',1)
@@ -14,7 +20,7 @@ if __name__ == '__main__':
     res = function.parop(data,label,3,1)
     rea = function.resana913(res,5,['accuracy','recall','precision'])
     print(rea)
-    #######################
+    # #######################
     #9-12classify
     #######################
     ##############################

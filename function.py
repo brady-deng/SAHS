@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier,ExtraTreeClassifier
+from sklearn.tree import DecisionTreeClassifier,ExtraTreeClassifier,export_graphviz
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
@@ -10,6 +10,8 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import graphviz
+
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -22,7 +24,37 @@ from mpl_toolkits.mplot3d import Axes3D
 # train_912主要是为了与MATLAB对比，不涉及超参数寻优问题，用的参数与MATLAB相同
 # resana_911,train911与train912的结果都可以使用该函数
 # resana_913,parop超参数寻有结果使用该函数，#res,超参数网格寻优结果,#N，原始数据切割段数,#index，评价指标内容
+# OB，data，训练数据，label，训练标签，name，输出文件名称，其他为决策树参数
 ###########################################
+def OB(data,label,name,max_depth,min_samples_split,min_samples_leaf):
+    ########################################
+    #data,训练数据
+    #label，训练标签
+    #name，输出文件名称
+    #max_depth，决策树最大深度
+    #min samples split...均为决策树参数
+    #########################################
+
+    clf = DecisionTreeClassifier(class_weight='balanced',max_depth=max_depth,\
+                                 min_samples_split=min_samples_split,min_samples_leaf\
+                                     = min_samples_leaf,random_state=0)
+    plottree(clf,data,label,name)
+def plottree(clf,data,label,name):
+    ##############################
+    #clf,分类器
+    #data，训练数据
+    #label，数据标签
+    ##############################
+    clf.fit(data,label)
+
+    score_a = cross_val_score(clf,data,label,scoring = 'accuracy',cv = 5,n_jobs=4)
+    score_r = cross_val_score(clf,data,label,scoring = 'recall',cv = 5,n_jobs=4)
+    score_p = cross_val_score(clf,data,label,scoring = 'precision',cv = 5,n_jobs=4)
+    res = [score_a.mean(),score_r.mean(),score_p.mean()]
+    dot_data = export_graphviz(clf,out_file=None)
+    graph = graphviz.Source(dot_data)
+    graph.render(name)
+    print(res)
 def load_data(filename, N):
     ########################
     # 读取特征xlsx文件
@@ -201,6 +233,9 @@ def parop(data, label, l, N):
     ###########################
     # 超参数调优，l：最后评价参数个数，N被试个数
     ###########################
+    ###########################
+    #1号分类器，SVM
+    ###########################
     # clf1 = SVC(class_weight='balanced')
     # par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
     # par1 = {'C' : [1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.1],'gamma':[1.5,2.0,2.5]}
@@ -208,21 +243,32 @@ def parop(data, label, l, N):
     # par1 = {'C':[1.6,1.65,1.7,1.75,1.8],'gamma':[1.5,1.6,1.7,1.8,1.9,2.0,2.1]}
     # par1 = {'C':[0.05,0.1,0.15,0.2],'gamma':[1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0]}
     # par1 = {'C': [0.05, 0.1, 0.15, 0.2], 'gamma': [0.5,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00]}
+    ###########################
+    #二号分类器，贝叶斯
+    ###########################
     # clf2 = GaussianNB()
     # par2 = {}
-    clf3 = AdaBoostClassifier(algorithm='SAMME.R')
-    # # par3 = {'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0],'n_estimators': [30, 35, 40, 45, 50, 55, 60]}
-    par3 = {'learning_rate': [1.5], 'n_estimators': [35], \
-            'base_estimator': [DecisionTreeClassifier(class_weight='balanced')]}
-
-    # par3 = {'n_estimators':[50,55,60,65,70],'learning_rate':[0.1,0.2,0.3,0.4,0.5]}
-    # clf4 = DecisionTreeClassifier(class_weight='balanced')
+    ###########################
+    #三号分类器，Ada
+    ###########################
+    # clf3 = AdaBoostClassifier()
+    # # # par3 = {'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0],'n_estimators': [30, 35, 40, 45, 50, 55, 60]}
+    # par3 = {'learning_rate': [1.5], 'n_estimators': [35], \
+    #         'base_estimator': [DecisionTreeClassifier()]}
+    #
+    # # par3 = {'n_estimators':[50,55,60,65,70],'learning_rate':[0.1,0.2,0.3,0.4,0.5]}
+    ###########################
+    #四号分类器与五号分类器，DT与ET
+    ###########################
+    clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced')
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
+    par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
+            'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf3]
-    pars = [par3]
+    clf = [clf4]
+    pars = [par4]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
