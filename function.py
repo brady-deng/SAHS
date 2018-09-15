@@ -263,7 +263,8 @@ def parop(data, label, l, N):
     clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced')
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
-    par4 = {'min_samples_split':[2],'min_samples_leaf':[1]}
+    par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
+            'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
     clf = [clf4]
