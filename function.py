@@ -1,8 +1,8 @@
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier,ExtraTreeClassifier,export_graphviz
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier,BaggingClassifier,RandomForestClassifier,VotingClassifier,ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier,RadiusNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.model_selection import cross_val_score, cross_validate, GridSearchCV, KFold
@@ -260,15 +260,38 @@ def parop(data, label, l, N):
     ###########################
     #四号分类器与五号分类器，DT与ET
     ###########################
-    clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
-    # clf5 = ExtraTreeClassifier(class_weight='balanced')
+    # clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
+    # clf5 = ExtraTreeClassifier(class_weight='balanced',random_state=0)
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
-    par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
-            'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
+    # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
+    #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
+    # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
+    #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
+    # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
+    #         'min_samples_leaf': [500,600,700,800,1000,1500 ], 'max_depth': [5,6,7]}
+    # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
+    #         'min_samples_leaf': [450,460,470,480,490,500,510,520,530,540,550], 'max_depth': [5]}
+    # clf6 = KNeighborsClassifier(n_jobs=4)
+    # par6 = {'n_neighbors':[3,4,5]}
+    # clf7 = RadiusNeighborsClassifier()
+    # par7 = {'radius':[0.5,1.0,1.5]}
+    ###########################################
+    #ensemble方法
+    ###########################################
+    # clf8 = BaggingClassifier(max_features=1.0,\
+    #                          oob_score=True,n_jobs=4,random_state=0)
+    # par8 = {'base_estimator':[DecisionTreeClassifier(class_weight='balanced'),\
+    #                           ExtraTreeClassifier(class_weight='balanced')],\
+    #         'n_estimators':[10,20,30,40,50],'max_samples':[0.2,0.4,0.5,1.0],'max_features':[0.5]}
+    clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=5,\
+                               n_jobs=4, oob_score=True,bootstrap=True)
+
+    par9 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
+            'min_samples_leaf':[500,600,700,800,1000,1500]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf4]
-    pars = [par4]
+    clf = [clf9]
+    pars = [par9]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
@@ -280,7 +303,7 @@ def parop(data, label, l, N):
                 tempclf.fit(data[i], label[i])
                 score = tempclf.cv_results_
                 res[str(clf[count])[0:3]][i].setdefault(scoler, score['mean_test_score'])
-    return res
+    return res,pars
 
 
 def createdataset(data, label, P, N, N_seg):
