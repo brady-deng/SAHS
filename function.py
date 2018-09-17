@@ -283,15 +283,19 @@ def parop(data, label, l, N):
     # par8 = {'base_estimator':[DecisionTreeClassifier(class_weight='balanced'),\
     #                           ExtraTreeClassifier(class_weight='balanced')],\
     #         'n_estimators':[10,20,30,40,50],'max_samples':[0.2,0.4,0.5,1.0],'max_features':[0.5]}
-    clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=5,\
-                               n_jobs=4, oob_score=True,bootstrap=True)
-
-    par9 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
-            'min_samples_leaf':[500,600,700,800,1000,1500]}
+    # clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=5,\
+    #                            n_jobs=4, oob_score=True,bootstrap=True)
+    #
+    # par9 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
+    #         'min_samples_leaf':[500,600,700,800,1000,1500]}
+    clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                                   class_weight = 'balanced',max_depth=5)
+    par10 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
+             'min_samples_leaf':[500,600,700,800,1000,1500]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf9]
-    pars = [par9]
+    clf = [clf10]
+    pars = [par10]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
