@@ -11,16 +11,20 @@ if __name__ == '__main__':
     #######################
     # data,label = function.load_data('f60-1-3.xlsx',1)
     # data,label = function.createdataset(data,label,0.2,1,5)
-
     #######################
-    # 9-13划分数据集
+    #9-17AHI计算
     #######################
-    data,label = function.load_data('f60-1-3.xlsx',1)
-    data,label = function.createdataset(data,label,0.2,1,5)
-    res,pars = function.parop(data,label,3,1)
-    rea = function.resana913(res,5,['accuracy','recall','precision'])
-    print(rea)
-    print(pars)
+    # data,label = function.load_data('f60-1-3.xlsx',1)
+    # ah,cache = function.AHIcal(label[0])
+    #######################
+    # 9-13划分数据集以及超参数调优
+    #######################
+    # data,label = function.load_data('f60-1-3.xlsx',1)
+    # data,label = function.createdataset(data,label,0.2,1,5)
+    # res,pars = function.parop(data,label,3,1)
+    # rea = function.resana913(res,5,['accuracy','recall','precision'])
+    # print(rea)
+    # print(pars)
     # #######################
     #9-12classify
     #######################

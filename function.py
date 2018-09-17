@@ -26,6 +26,51 @@ from mpl_toolkits.mplot3d import Axes3D
 # resana_913,parop超参数寻有结果使用该函数，#res,超参数网格寻优结果,#N，原始数据切割段数,#index，评价指标内容
 # OB，data，训练数据，label，训练标签，name，输出文件名称，其他为决策树参数
 ###########################################
+def AHIcal(label):
+###########################################
+#计算AHI的函数
+#label按时间排列的标签
+#返回的是aha次数以及每次持续的时长以及相应的开始以及结束的时间
+###########################################
+    templ = len(label)
+    startflag = 0
+    endflag = 0
+    tempcount = 0
+    cachelen = []
+    cachestart = []
+    cacheend = []
+    aha = 0
+    # thre = 10
+    for i in range(templ-1):
+        if label[i] == 0 and label[i+1] == 1:
+            startflag = 1
+            endflag = 0
+            cachestart.append(i)
+        if label[i] == 1 and label[i+1] == 0:
+            endflag = 1
+            startflag = 0
+            cacheend.append(i)
+        if startflag == 1 and endflag == 0:
+            tempcount += 1
+        if endflag == 1 and startflag == 0:
+            cachelen.append(tempcount)
+            aha+=1
+            startflag = 0
+            endflag = 0
+            tempcount = 0
+    return aha,cachelen,cachestart,cacheend
+def smoothres(label):
+    l = len(label)
+    for i in range(4,l-3):
+        if label[i-3] == 1 and label[i-2] == 1 and label[i - 1] == 1 and label[i] == 0 \
+            and label[i+1] == 1 and label[i+2] == 1 and label[i+3] == 1:
+            label[i] = 1
+        if label[i-3] == 0 and label[i-2] == 0 and label[i - 1] == 0 and label[i] == 1 \
+            and label[i+1] == 0 and label[i+2] == 0 and label[i+3] == 0:
+            label[i] = 0
+    var1,var2,var3,var4 = AHIcal(label)
+    return var1,var2,var3,var4
+
 def OB(data,label,name,max_depth,min_samples_split,min_samples_leaf):
     ########################################
     #data,训练数据
