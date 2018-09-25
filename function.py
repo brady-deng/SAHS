@@ -31,10 +31,12 @@ from mpl_toolkits.mplot3d import Axes3D
 # AHIcal，输入的分别是分类器名称，切分好的数据集，标签，返回的分别是ah次数、相应长度、开始时间以及结束时间
 # AHIres,clf,分类器名称，data输入的训练数据，label输入的标签数据，返回的分别是片段正确率，错误分类的区间，区间正确率以及遗漏的区间
 # smoothres,对输出结果做平滑处理，输入的是label以及相应的阈值，返回的与AHIcal相同.
+# clfcas,分类器级联定位ahi区间，clfs为输入的级联分类器，data、label为1号分类器的训练数据，data2、label2为2号分类器的训练数据
+# 返回的是1号分类器的片段分类性能，2号分类器的片段分类性能，最终ahi区间的分类性能以及各种错误区间。
 ###########################################
-def clfcas(clfs,data,label,data2,label2):
+def clfcas(clfs,data,label,data2,label2,sust):
     tempclf = []
-    sust = 20
+    # sust = 20
     for item in clfs:
         if item == "Knn":
             tempclf.append(KNeighborsClassifier())
@@ -53,23 +55,26 @@ def clfcas(clfs,data,label,data2,label2):
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
-    var1, var2, var3, var4 = AHIcal(temppre, 5)
+    tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 5)
     sec = np.zeros(len(label2),dtype = bool)
-    for i in range(var1):
-        sec[(var3[i]-sust):(var4[i]+60-20+sust)] = True
+    for i in range(tempvar1):
+        sec[(tempvar3[i]-sust):(tempvar4[i]+60-20+sust)] = True
+    map = np.where(sec == True)
+
     # data2 = data[sec]
     # label2 = label[sec]
 
     tempclf[1].fit(data2,label2)
     datawait = data2[sec]
     labelwait = label2[sec]
+    # tempclf[1].fit(datawait, labelwait)
     temppre = tempclf[1].predict(datawait)
     ind2 = []
     ind2.append(accuracy_score(labelwait, temppre))
     ind2.append(recall_score(labelwait, temppre))
     ind2.append(precision_score(labelwait, temppre))
-    var1, var2, var3, var4 = AHIcal(labelwait, 5)
-    var5, var6, var7, var8 = AHIcal(temppre, 5)
+    var1, var2, var3, var4 = AHIcal(labelwait, 1)
+    var5, var6, var7, var8 = AHIcal(temppre, 10)
 
     res = []
     flag = [0] * var5
@@ -94,6 +99,13 @@ def clfcas(clfs,data,label,data2,label2):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
     eva.append(100 * (var1 - len(missres)) / var1)
+    wrongloc = []
+    for item in wrongres:
+        wrongloc.append([map[0][item[0]],map[0][item[1]]])
+    missloc = []
+    for item in missres:
+        missloc.append([map[0][item[0]],map[0][item[1]]])
+
 
     return ind1,ind2,eva,wrongres,missres
 
