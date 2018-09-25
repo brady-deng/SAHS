@@ -15,9 +15,15 @@ if __name__ == '__main__':
     #9-22测试
     #######################
     data,label = function.load_data('f60-1-notao.xlsx',1)
-    data2,label2 = function.load_data('f20-1-925.xlsx',1)
+    data2,label2 = function.load_data('f20-1-7.xlsx',1)
+    # res,pars = function.parop(data,label,3,1)
+    # rea = function.resana913(res,5,['accuracy','recall','precision'])
+    # res2,pars2 = function.parop(data2,label2,3,1)
+    # rea2 = function.resana913(res2,5,['accuracy','recall','precision'])
+    # print(rea)
+
     # res,flag = function.AHIres(["Dec"],data[0],label[0])
-    function.clfcas(["Dec","Dec"],data[0],label[0],data2[0],label2[0],0)
+    function.clfcas(["Dec","Dec"],data[0],label[0],data2[0],label2[0],0,1)
     #######################
     #9-17AHI计算
     #######################

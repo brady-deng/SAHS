@@ -33,9 +33,11 @@ from mpl_toolkits.mplot3d import Axes3D
 # smoothres,对输出结果做平滑处理，输入的是label以及相应的阈值，返回的与AHIcal相同.
 # clfcas,分类器级联定位ahi区间，clfs为输入的级联分类器，data、label为1号分类器的训练数据，data2、label2为2号分类器的训练数据
 # 返回的是1号分类器的片段分类性能，2号分类器的片段分类性能，最终ahi区间的分类性能以及各种错误区间。
+# drawtree,输入项为clf与输出文件名称，保存为pdf格式，可以观察树的结构
 ###########################################
-def clfcas(clfs,data,label,data2,label2,sust):
+def clfcas(clfs,data,label,data2,label2,sust,Y):
     tempclf = []
+    count = 1
     # sust = 20
     for item in clfs:
         if item == "Knn":
@@ -43,8 +45,13 @@ def clfcas(clfs,data,label,data2,label2,sust):
         elif item == "Gau":
             tempclf.append(GaussianNB())
         elif item == "Dec":
-            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=100,
-                                             max_depth=5))
+            comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
+            ind1 = input(comment).split()
+            ind1 = [int(num) for num in ind1]
+
+            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
+                                             max_depth=int(ind1[2])))
+            count+=1
         elif item == "Ext":
             tempclf.append(ExtraTreeClassifier())
         elif item == "SVC":
@@ -65,6 +72,8 @@ def clfcas(clfs,data,label,data2,label2,sust):
     # label2 = label[sec]
 
     tempclf[1].fit(data2,label2)
+    if Y:
+        drawtree(tempclf[1],'tree')
     datawait = data2[sec]
     labelwait = label2[sec]
     # tempclf[1].fit(datawait, labelwait)
@@ -83,8 +92,8 @@ def clfcas(clfs,data,label,data2,label2,sust):
     for i in range(var5):
         # tempflag = []
         for k in range(var1):
-            if (var7[i] > var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] < var4[k]) or (
-                    var7[i] < var3[k] and var8[i] > var4[k]):
+            if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+                    var7[i] <= var3[k] and var8[i] >= var4[k]):
                 res.append([i, k])
                 flag[i] = 1
         # res.append(tempflag)
@@ -228,13 +237,13 @@ def AHIcal(label,thre=50):
     cacheend = []
     aha = 0
     # thre = 50
-    for i in range(templ-1):
-        if label[i] == 0 and label[i+1] == 1:
+    for i in range(1,templ):
+        if label[i-1] == 0 and label[i] == 1:
             startflag = 1
             endflag = 0
             tempstart = i
             # cachestart.append(i)
-        if label[i] == 1 and label[i+1] == 0:
+        if label[i-1] == 1 and label[i] == 0:
             endflag = 1
             startflag = 0
             tempend = i
@@ -242,7 +251,7 @@ def AHIcal(label,thre=50):
         if startflag == 1 and endflag == 0:
             tempcount += 1
         if endflag == 1 and startflag == 0:
-            if tempcount>thre:
+            if tempcount>=thre:
                 aha+=1
                 cachelen.append(tempcount)
                 cachestart.append(tempstart)
@@ -508,8 +517,10 @@ def parop(data, label, l, N):
     clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced',random_state=0)
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
-    par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
-            'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
+    # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
+    #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
+    par4 = {'min_samples_split': [50, 150, 250, 350, 450, 550, 1000], \
+            'min_samples_leaf': [100, 250, 500, 750, 1000], 'max_depth': [4, 5,6,7]}
     # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
     #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
     # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
