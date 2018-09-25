@@ -20,13 +20,188 @@ from mpl_toolkits.mplot3d import Axes3D
 # load_data读取MATLAB输出的特征集合xlsx文件
 # createdataset产生在时间轴上均匀切割分布的数据集合，可以使用交叉训练，不用担心冗余问题
 # parop超参数调优，可以返回各参数对应的分类结果，使用gridsearchcv方法
+# train97直接切割数据集的方式训练分类器
 # train_911针对于每个被试每一折数据的超参数寻优
 # train_912主要是为了与MATLAB对比，不涉及超参数寻优问题，用的参数与MATLAB相同
 # resana_911,train911与train912的结果都可以使用该函数
 # resana_913,parop超参数寻有结果使用该函数，#res,超参数网格寻优结果,#N，原始数据切割段数,#index，评价指标内容
 # OB，data，训练数据，label，训练标签，name，输出文件名称，其他为决策树参数
+# createahiset,产生ahi训练测试集合
+# AHIval，输入的分别是分类器名称，切分好的数据集，标签，返回的是标签的ahi区间，预测的ahi区间以及片段的评价指标
+# AHIcal，输入的分别是分类器名称，切分好的数据集，标签，返回的分别是ah次数、相应长度、开始时间以及结束时间
+# AHIres,clf,分类器名称，data输入的训练数据，label输入的标签数据，返回的分别是片段正确率，错误分类的区间，区间正确率以及遗漏的区间
+# smoothres,对输出结果做平滑处理，输入的是label以及相应的阈值，返回的与AHIcal相同.
 ###########################################
-def AHIcal(label):
+def clfcas(clfs,data,label,data2,label2):
+    tempclf = []
+    sust = 20
+    for item in clfs:
+        if item == "Knn":
+            tempclf.append(KNeighborsClassifier())
+        elif item == "Gau":
+            tempclf.append(GaussianNB())
+        elif item == "Dec":
+            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=100,
+                                             max_depth=5))
+        elif item == "Ext":
+            tempclf.append(ExtraTreeClassifier())
+        elif item == "SVC":
+            tempclf.append(SVC())
+    tempclf[0].fit(data,label)
+    temppre = tempclf[0].predict(data)
+    ind1 = []
+    ind1.append(accuracy_score(label, temppre))
+    ind1.append(recall_score(label, temppre))
+    ind1.append(precision_score(label, temppre))
+    var1, var2, var3, var4 = AHIcal(temppre, 5)
+    sec = np.zeros(len(label2),dtype = bool)
+    for i in range(var1):
+        sec[(var3[i]-sust):(var4[i]+60-20+sust)] = True
+    # data2 = data[sec]
+    # label2 = label[sec]
+
+    tempclf[1].fit(data2,label2)
+    datawait = data2[sec]
+    labelwait = label2[sec]
+    temppre = tempclf[1].predict(datawait)
+    ind2 = []
+    ind2.append(accuracy_score(labelwait, temppre))
+    ind2.append(recall_score(labelwait, temppre))
+    ind2.append(precision_score(labelwait, temppre))
+    var1, var2, var3, var4 = AHIcal(labelwait, 5)
+    var5, var6, var7, var8 = AHIcal(temppre, 5)
+
+    res = []
+    flag = [0] * var5
+    wrongres = []
+    eva = []
+    for i in range(var5):
+        # tempflag = []
+        for k in range(var1):
+            if (var7[i] > var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] < var4[k]) or (
+                    var7[i] < var3[k] and var8[i] > var4[k]):
+                res.append([i, k])
+                flag[i] = 1
+        # res.append(tempflag)
+        if flag[i] == 0:
+            wrongres.append([var7[i], var8[i]])
+    eva.append(100 * sum(flag) / len(flag))
+    flag2 = [0] * var1
+    missres = []
+    for item in res:
+        flag2[item[1]] = 1
+    for i in range(var1):
+        if flag2[i] == 0:
+            missres.append([var3[i], var4[i]])
+    eva.append(100 * (var1 - len(missres)) / var1)
+
+    return ind1,ind2,eva,wrongres,missres
+
+def AHIres(clfs,data,label):
+    ##################################
+    #clfs,分类器名称
+    #data，带训练数据
+    #label，带训练标签
+    #返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
+    ##################################
+    ind = []
+    for item in clfs:
+        if item == "Knn":
+            tempclf = KNeighborsClassifier()
+        elif item == "Gau":
+            tempclf = GaussianNB()
+        elif item == "Dec":
+            tempclf = DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=100,
+                                             max_depth=5)
+        elif item == "Ext":
+            tempclf = ExtraTreeClassifier()
+        elif item == "SVC":
+            tempclf = SVC()
+    tempclf.fit(data,label)
+    drawtree(tempclf,'tree')
+    pre =tempclf.predict(data)
+    ind.append(accuracy_score(label,pre))
+    ind.append(recall_score(label,pre))
+    ind.append(precision_score(label,pre))
+    var1,var2,var3,var4 = AHIcal(label,1)
+    # var5,var6,var7,var8 = smoothres(pre,20)
+    var5, var6, var7, var8 = AHIcal(pre, 5)
+    res = []
+    flag = [0]*var5
+    wrongres = []
+    eva = []
+    for i in range(var5):
+        # tempflag = []
+        for k in range(var1):
+            if (var7[i]>var3[k]and var7[i]<var4[k]) or (var8[i]>var3[k]and var8[i]<var4[k]) or (var7[i]<var3[k] and var8[i]>var4[k]):
+                res.append([i,k])
+                flag[i] = 1
+        # res.append(tempflag)
+        if flag[i] == 0:
+            wrongres.append([var7[i],var8[i]])
+    eva.append(100*sum(flag)/len(flag))
+    flag2 = [0]*var1
+    missres = []
+    for item in res:
+        flag2[item[1]] = 1
+    for i in range(var1):
+        if flag2[i] == 0:
+            missres.append([var3[i],var4[i]])
+    eva.append(100*(var1-len(missres))/var1)
+    return ind,wrongres,eva,missres
+
+
+def AHIval(clfs,data,label):
+###########################################
+# clfs，待检验分类器
+# data，切分好的数据集
+# label，切分好的标签集
+###########################################
+    tempclfs = []
+    ind = []
+    for item in clfs:
+        if item == "Knn":
+            tempclf = KNeighborsClassifier()
+        elif item == "Gau":
+            tempclf = GaussianNB()
+        elif item == "Dec":
+            tempclf = DecisionTreeClassifier(class_weight='balanced',min_samples_split = 50, min_samples_leaf= 500, max_depth= 5)
+        elif item == "Ext":
+            tempclf = ExtraTreeClassifier()
+        elif item == "SVC":
+            tempclf = SVC()
+        tempclfs.append(tempclf)
+    clfs = tempclfs
+    respre = {}
+    res = {}
+    for clf in clfs:
+        l = len(data)
+        respre.setdefault(str(clf)[0:3],{})
+        for i in range(l):
+            templ = len(data[i])
+            respre[str(clf)[0:3]].setdefault(i,[])
+            res.setdefault(i,[])
+            for k in range(templ):
+                tempind = []
+                datatrain = data[i][k]
+                datatest = data[i][1-k]
+                labeltrain = label[i][k]
+                labeltest = label[i][1-k]
+                clf.fit(datatrain,labeltrain)
+                temppre = clf.predict(datatest)
+                tempind.append(accuracy_score(labeltest,temppre))
+                tempind.append(recall_score(labeltest,temppre))
+                tempind.append(precision_score(labeltest,temppre))
+                var1,var2,var3,var4 = smoothres(temppre)
+                var5,var6,var7,var8 = AHIcal(labeltest)
+                respre[str(clf)[0:3]][i].append([var1,var2])
+                res[i].append([var5,var6])
+                ind.append(tempind)
+    return res,respre,ind
+
+
+
+def AHIcal(label,thre=50):
 ###########################################
 #计算AHI的函数
 #label按时间排列的标签
@@ -40,26 +215,33 @@ def AHIcal(label):
     cachestart = []
     cacheend = []
     aha = 0
-    # thre = 10
+    # thre = 50
     for i in range(templ-1):
         if label[i] == 0 and label[i+1] == 1:
             startflag = 1
             endflag = 0
-            cachestart.append(i)
+            tempstart = i
+            # cachestart.append(i)
         if label[i] == 1 and label[i+1] == 0:
             endflag = 1
             startflag = 0
-            cacheend.append(i)
+            tempend = i
+            # cacheend.append(i)
         if startflag == 1 and endflag == 0:
             tempcount += 1
         if endflag == 1 and startflag == 0:
-            cachelen.append(tempcount)
-            aha+=1
+            if tempcount>thre:
+                aha+=1
+                cachelen.append(tempcount)
+                cachestart.append(tempstart)
+                cacheend.append(tempend)
             startflag = 0
             endflag = 0
             tempcount = 0
+            tempstart = 0
+            tempend = 0
     return aha,cachelen,cachestart,cacheend
-def smoothres(label):
+def smoothres(label,thre=50):
     l = len(label)
     for i in range(4,l-3):
         if label[i-3] == 1 and label[i-2] == 1 and label[i - 1] == 1 and label[i] == 0 \
@@ -68,7 +250,7 @@ def smoothres(label):
         if label[i-3] == 0 and label[i-2] == 0 and label[i - 1] == 0 and label[i] == 1 \
             and label[i+1] == 0 and label[i+2] == 0 and label[i+3] == 0:
             label[i] = 0
-    var1,var2,var3,var4 = AHIcal(label)
+    var1,var2,var3,var4 = AHIcal(label,thre)
     return var1,var2,var3,var4
 
 def OB(data,label,name,max_depth,min_samples_split,min_samples_leaf):
@@ -100,6 +282,11 @@ def plottree(clf,data,label,name):
     graph = graphviz.Source(dot_data)
     graph.render(name)
     print(res)
+def drawtree(clf,name):
+    # clf.fit(data,label)
+    dot_data = export_graphviz(clf,out_file=None)
+    graph = graphviz.Source(dot_data)
+    graph.render(name)
 def load_data(filename, N):
     ########################
     # 读取特征xlsx文件
@@ -128,6 +315,7 @@ def train_97(data, label, P, N):
     # label标签
     # P训练集合比例
     # N待分类的被试数目
+    # 采用直接按比例划分数据集的方式
     #######################
     clf1 = SVC(kernel='rbf', C=0.5, gamma=1, max_iter=1e7, tol=1e-5, cache_size=500, shrinking=False)
     # par1 = {'C':[0.1,0.5,1,1.1,1.2,1.3,1.4,1.5,2.0,3.0]}
@@ -305,11 +493,11 @@ def parop(data, label, l, N):
     ###########################
     #四号分类器与五号分类器，DT与ET
     ###########################
-    # clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
+    clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced',random_state=0)
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
-    # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
-    #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
+    par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
+            'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
     # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
     #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
     # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
@@ -333,14 +521,14 @@ def parop(data, label, l, N):
     #
     # par9 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
     #         'min_samples_leaf':[500,600,700,800,1000,1500]}
-    clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
-                                   class_weight = 'balanced',max_depth=5)
-    par10 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
-             'min_samples_leaf':[500,600,700,800,1000,1500]}
+    # clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+    #                                class_weight = 'balanced',max_depth=5)
+    # par10 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
+    #          'min_samples_leaf':[500,600,700,800,1000,1500]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf10]
-    pars = [par10]
+    clf = [clf4]
+    pars = [par4]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
@@ -354,6 +542,26 @@ def parop(data, label, l, N):
                 res[str(clf[count])[0:3]][i].setdefault(scoler, score['mean_test_score'])
     return res,pars
 
+def createahiset(data,label,P,N):
+    ##########################
+    #data数据集
+    #label标签集合
+    #P切割集合的比例
+    #N被试数目
+    ##########################
+    datares = []
+    labelres = []
+    for i in range(N):
+        templ = len(data[i])
+        segl = int(templ*P)
+        tempdata = []
+        templabel = []
+        for k in range(int(1/P)):
+            tempdata.append(data[i][k*segl:(k+1)*segl])
+            templabel.append(label[i][k*segl:(k+1)*segl])
+        datares.append(tempdata)
+        labelres.append(templabel)
+    return datares,labelres
 
 def createdataset(data, label, P, N, N_seg):
     #######################
@@ -363,6 +571,7 @@ def createdataset(data, label, P, N, N_seg):
     # P训练集合比例
     # N待分类的被试数目
     # 数据切割段数
+    # ahiflag,是否准备计算ahi标志
     # 产生一个将原始样本按时间轴均匀切割然后按时间排布抽取的数据集
     #######################
     ##########################

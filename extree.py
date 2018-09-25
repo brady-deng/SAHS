@@ -25,4 +25,4 @@ if __name__ == '__main__':
     ###################################
     data,label = function.load_data("f60-1-3.xlsx",1)
     data,label = function.createdataset(data,label,0.2,1,5)
-    function.OB(data[0],label[0],'temp',3,50,100)
+    function.OB(data[0],label[0],'temp',5,50,100)
