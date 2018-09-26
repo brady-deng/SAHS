@@ -7,6 +7,25 @@ import pandas as pd
 
 if __name__ == '__main__':
     #######################
+#926
+#########################
+    # 级联分类器训练
+    N = int(input('Please input the number of the subjects you want to train and test:'))
+    data,label = function.load_data('f60-1-notao.xlsx',N)
+    data2,label2 = function.load_data('f20-1-7.xlsx',N)
+    res = []
+    for i in range(N):
+        datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.dataseg(data[0],label[0],data2[0],label2[0],60,20,0.7)
+        clfs = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
+        tempres = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
+        res.append(tempres)
+
+    # 单分类器训练
+    # datatrain,labeltrain,datatest,labeltest = function.get_dataset(data2,label2,0.7)
+    # clfs = function.AHItrain(["Dec"],datatrain[0],labeltrain[0])
+    # function.AHItest(clfs,datatest[0],labeltest[0])
+
+    #######################
     #9-15OB tree
     #######################
     # data,label = function.load_data('f60-1-3.xlsx',1)
@@ -14,8 +33,11 @@ if __name__ == '__main__':
     #######################
     #9-22测试
     #######################
-    data,label = function.load_data('f60-1-notao.xlsx',1)
-    data2,label2 = function.load_data('f20-1-7.xlsx',1)
+    # data,label = function.load_data('f60-1-notao.xlsx',1)
+    # data2,label2 = function.load_data('f20-1-flow.xlsx',1)
+    # function.clfcas(["Dec", "Dec"], data[0], label[0], data2[0], label2[0], 0, 1)
+    # data3, label3 = function.load_data('f20-1-sp.xlsx', 1)
+    # function.clfcas(["Dec", "Dec"], data[0], label[0], data3[0], label3[0], 0, 1)
     # res,pars = function.parop(data,label,3,1)
     # rea = function.resana913(res,5,['accuracy','recall','precision'])
     # res2,pars2 = function.parop(data2,label2,3,1)
@@ -23,7 +45,7 @@ if __name__ == '__main__':
     # print(rea)
 
     # res,flag = function.AHIres(["Dec"],data[0],label[0])
-    function.clfcas(["Dec","Dec"],data[0],label[0],data2[0],label2[0],0,1)
+
     #######################
     #9-17AHI计算
     #######################
