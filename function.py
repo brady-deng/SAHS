@@ -35,13 +35,38 @@ from mpl_toolkits.mplot3d import Axes3D
 # clfcas,分类器级联定位ahi区间，clfs为输入的级联分类器，data、label为1号分类器的训练数据，data2、label2为2号分类器的训练数据
 # 返回的是1号分类器的片段分类性能，2号分类器的片段分类性能，最终ahi区间的分类性能以及各种错误区间。
 # drawtree,输入项为clf与输出文件名称，保存为pdf格式，可以观察树的结构
-# dataseg,用于级联分类器的数据集切割
+# dataseg,用于级联分类器的单数据集按比例切割
 # clfcastrain，级联分类器训练以及性能评估
 # clfcastest，级联分类器测试及性能评估
 # getdataset，按比例获得训练集、测试集，输入的是包含各被试的data、label以及数据集切割比例P，返回的是训练集以及测试集
 # AHItrain，单分类器训练
 # AHItest，单分类器测试
+# casdata，产生K折交叉训练数据
+# clfcaskfold，K折交叉训练并且返回训练结果
 ###########################################
+def clfcaskfold(data,label,data2,label2):
+    N = int(input('Please input the number of the subjects you want to train and test:'))
+    P = float(input('Please input the proportion of the dataset:'))
+    ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
+    ind = [int(item) for item in ind]
+    res = []
+    for i in range(N):
+        resi = []
+        datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(data[i], label[i], data2[i], label2[i], 60, 20, P)
+        resmat = np.zeros([int(1 / P)+1, 13])
+        for k in range(int(1/P)):
+            clfs,num1,num2 = clfcastrain(["Dec","Dec"],datatrain1[k],labeltrain1[k],datatrain2[k],labeltrain2[k],0,0,ind)
+            tempres = clfcastest(clfs,datatest1[k],labeltest1[k],datatest2[k],labeltest2[k],0,0)
+            resi.append(tempres)
+            resmat[k] = [num2,num1,tempres[0][0],tempres[0][1],tempres[0][2],tempres[1][0],tempres[1][1],tempres[1][2],tempres[2][0],tempres[2][1],tempres[-3],tempres[-2],tempres[-1]]
+        resmat[-1,:] = sum(resmat)/int(1/P)
+        resmat[-1,-3:] = sum(resmat[0:-1,-3:])
+        resmat[-1,8] = 1 - (resmat[-1,10]/(resmat[-1,12]-resmat[-1,11]))
+        resmat[-1,9] = 1 - resmat[-1,11]/resmat[-1,12]
+        res.append(resmat)
+
+
+    return res
 def casdata(data1,label1,data2,label2,WT1,WT2,P):
     l1 = len(label1)
     l2 = len(label2)
@@ -185,14 +210,18 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
         ind2 = [0, 0, 0]
         if var1 != 0:
             eva = [0, 0]
+            wrongres = []
+            missres = []
+            for k in range(var1):
+                missres.append([var3[k],var4[k]])
 
         else:
             eva = [100, 100]
-        wrongres = []
-        missres = []
+            wrongres = []
+            missres = []
 
 
-    return tempclf
+    return tempclf,sum(label2),len(label2)-sum(label2)
 def clfcastest(clfs,data,label,data2,label2,sust,Y):
     tempclf = clfs
     count = 1
@@ -235,7 +264,10 @@ def clfcastest(clfs,data,label,data2,label2,sust,Y):
             # res.append(tempflag)
             if flag[i] == 0:
                 wrongres.append([var7[i], var8[i]])
-        eva.append(100 * sum(flag) / len(flag))
+        if var5 != 0:
+            eva.append(100 * sum(flag) / len(flag))
+        else:
+            eva.append(0)
         flag2 = [0] * var1
         missres = []
         for item in res:
@@ -254,16 +286,22 @@ def clfcastest(clfs,data,label,data2,label2,sust,Y):
         # for item in missres:
         #     missloc.append([map[0][item[0]],map[0][item[1]]])
     else:
-        ind2 = [0,0,0]
-        if var1 !=0:
-            eva = [0,0]
+        ind2 = [0, 0, 0]
+        if var1 != 0:
+            # ind2 = [0, 0, 0]
+            eva = [0, 0]
+            wrongres = []
+            missres = []
+            for k in range(var1):
+                missres.append([var3[k],var4[k]])
 
         else:
-            eva = [100,100]
-        wrongres = []
-        missres = []
 
-    return ind1,ind2,eva,wrongres,missres
+            eva = [100, 100]
+            wrongres = []
+            missres = []
+
+    return ind1,ind2,eva,wrongres,missres,sum(label2),len(label2)-sum(label2),len(wrongres),len(missres),var1
 def clfcas(clfs,data,label,data2,label2,sust,Y):
     tempclf = []
     count = 1

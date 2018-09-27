@@ -12,31 +12,21 @@ if __name__ == '__main__':
     data,label = function.load_data('f60-1-notao.xlsx',1)
     data2,label2 = function.load_data('f20-1-7.xlsx',1)
     datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.dataseg(
-        data[0], label[0], data2[0], label2[0], 60, 20, 0.7)
-    clfs = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
-    tempres = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
+        data[0], label[0], data2[0], label2[0], 60, 20, 0.5)
+    clfs,num1,num2 = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
+    tempres, = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
     print(tempres)
     #######################
 #926
 #########################
     # # 级联分类器K折交叉训练
-    # N = int(input('Please input the number of the subjects you want to train and test:'))
-    # P = float(input('Please input the proportion of the dataset:'))
-    # ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
-    # ind = [int(item) for item in ind]
-    # data,label = function.load_data('f60-1-notao.xlsx',N)
-    # data2,label2 = function.load_data('f20-1-7.xlsx',N)
-    #
-    # res = []
-    # for i in range(N):
-    #     resi = []
-    #     datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.casdata(data[i], label[i], data2[i], label2[i], 60, 20, P)
-    #     for k in range(int(1/P)):
-    #         clfs = function.clfcastrain(["Dec","Dec"],datatrain1[k],labeltrain1[k],datatrain2[k],labeltrain2[k],0,0,ind)
-    #         tempres = function.clfcastest(clfs,datatest1[k],labeltest1[k],datatest2[k],labeltest2[k],0,0)
-    #         resi.append(tempres)
-    # res.append(resi)
+
+    # data,label = function.load_data('f60-1-notao.xlsx',1)
+    # data2,label2 = function.load_data('f20-1-7.xlsx',1)
+    # res = function.clfcaskfold(data,label,data2,label2)
     # print(res)
+
+
     # 单分类器训练
     # datatrain,labeltrain,datatest,labeltest = function.get_dataset(data2,label2,0.7)
     # clfs = function.AHItrain(["Dec"],datatrain[0],labeltrain[0])
