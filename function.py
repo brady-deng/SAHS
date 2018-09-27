@@ -18,6 +18,7 @@ from mpl_toolkits.mplot3d import Axes3D
 ###########################################
 # deng的SAHS数据集处理函数包
 # load_data读取MATLAB输出的特征集合xlsx文件
+# createahiset时间轴上均匀切割数据
 # createdataset产生在时间轴上均匀切割分布的数据集合，可以使用交叉训练，不用担心冗余问题
 # parop超参数调优，可以返回各参数对应的分类结果，使用gridsearchcv方法
 # train97直接切割数据集的方式训练分类器
@@ -41,6 +42,35 @@ from mpl_toolkits.mplot3d import Axes3D
 # AHItrain，单分类器训练
 # AHItest，单分类器测试
 ###########################################
+def casdata(data1,label1,data2,label2,WT1,WT2,P):
+    l1 = len(label1)
+    l2 = len(label2)
+    lte = int(l1*P)
+    k = int(1/P)
+    datatrain1 = []
+    datatrain2 = []
+    datatest1 = []
+    datatest2 = []
+    labeltrain1 = []
+    labeltrain2 = []
+    labeltest1 = []
+    labeltest2 = []
+    for i in range(k):
+        ind = np.zeros(l1, dtype=bool)
+        ind[i*lte:(i+1)*lte] = True
+        datatest1.append( data1[ind])
+        labeltest1.append( label1[ind])
+        ind = ~ind
+        datatrain1.append( data1[ind])
+        labeltrain1.append( label1[ind])
+        ind = np.zeros(l2, dtype=bool)
+        ind[i*lte:((i+1)*lte+WT1-WT2)] = True
+        datatest2.append( data2[ind])
+        labeltest2.append( label2[ind])
+        ind = ~ind
+        datatrain2.append( data2[ind])
+        labeltrain2.append( label2[ind])
+    return datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2
 def dataseg(data1,label1,data2,label2,WT1,WT2,P):
     l = len(label1)
     ltr = int(l*P)
@@ -55,26 +85,31 @@ def dataseg(data1,label1,data2,label2,WT1,WT2,P):
     datatest2 = data2[ltr2:]
     labeltest2 = label2[ltr2:]
     return datatrain1,labeltrain1,datatest1,labeltest1,datatrain2,labeltrain2,datatest2,labeltest2
-def clfcastrain(clfs,data,label,data2,label2,sust,Y):
+def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
     tempclf = []
     count = 1
     # sust = 20
-    for item in clfs:
-        if item == "Knn":
+    for i in range(len(clfs)):
+        if clfs[i] == "Knn":
             tempclf.append(KNeighborsClassifier())
-        elif item == "Gau":
+        elif clfs[i] == "Gau":
             tempclf.append(GaussianNB())
-        elif item == "Dec":
-            comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
-            ind1 = input(comment).split()
-            ind1 = [int(num) for num in ind1]
+        elif clfs[i] == "Dec":
+            if len(ind) == 0:
+                comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
+                ind1 = input(comment).split()
+                ind1 = [int(num) for num in ind1]
 
-            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
-                                             max_depth=int(ind1[2])))
-            count+=1
-        elif item == "Ext":
+                tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
+                                                 max_depth=int(ind1[2]),random_state=0))
+                count+=1
+            else:
+                tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind[i*3]),
+                                                      min_samples_leaf=int(ind[i*3+1]),
+                                                      max_depth=int(ind[i*3+2]),random_state=0))
+        elif clfs[i] == "Ext":
             tempclf.append(ExtraTreeClassifier())
-        elif item == "SVC":
+        elif clfs[i] == "SVC":
             tempclf.append(SVC())
     tempclf[0].fit(data,label)
     temppre = tempclf[0].predict(data)
@@ -95,46 +130,66 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y):
     if Y:
         drawtree(tempclf[0],'tree1')
         drawtree(tempclf[1],'tree2')
+
     datawait = data2[sec]
     labelwait = label2[sec]
-    # tempclf[1].fit(datawait, labelwait)
-    temppre = tempclf[1].predict(datawait)
-    ind2 = []
-    ind2.append(accuracy_score(labelwait, temppre))
-    ind2.append(recall_score(labelwait, temppre))
-    ind2.append(precision_score(labelwait, temppre))
-    var1, var2, var3, var4 = AHIcal(labelwait, 1)
-    var5, var6, var7, var8 = AHIcal(temppre, 10)
+    var1, var2, var3, var4 = AHIcal(label2, 1)
+    if len(datawait) != 0:
+        # tempclf[1].fit(datawait, labelwait)
+        temppre = tempclf[1].predict(datawait)
+        ind2 = []
+        ind2.append(accuracy_score(labelwait, temppre))
+        ind2.append(recall_score(labelwait, temppre))
+        ind2.append(precision_score(labelwait, temppre))
 
-    res = []
-    flag = [0] * var5
-    wrongres = []
-    eva = []
-    for i in range(var5):
-        # tempflag = []
-        for k in range(var1):
-            if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
-                    var7[i] <= var3[k] and var8[i] >= var4[k]):
-                res.append([i, k])
-                flag[i] = 1
-        # res.append(tempflag)
-        if flag[i] == 0:
-            wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
-    flag2 = [0] * var1
-    missres = []
-    for item in res:
-        flag2[item[1]] = 1
-    for i in range(var1):
-        if flag2[i] == 0:
-            missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
-    wrongloc = []
-    for item in wrongres:
-        wrongloc.append([map[0][item[0]],map[0][item[1]]])
-    missloc = []
-    for item in missres:
-        missloc.append([map[0][item[0]],map[0][item[1]]])
+        var5, var6, var7, var8 = AHIcal(temppre, 10)
+        var7 = map[0][var7]
+        var8 = map[0][var8]
+        res = []
+        flag = [0] * var5
+        wrongres = []
+        eva = []
+        for i in range(var5):
+            # tempflag = []
+            for k in range(var1):
+                if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+                        var7[i] <= var3[k] and var8[i] >= var4[k]):
+                    res.append([i, k])
+                    flag[i] = 1
+            # res.append(tempflag)
+            if flag[i] == 0:
+                wrongres.append([var7[i], var8[i]])
+        ########################
+        #eva[0]是精准率
+        eva.append(100 * sum(flag) / len(flag))
+        flag2 = [0] * var1
+        missres = []
+        for item in res:
+            flag2[item[1]] = 1
+        for i in range(var1):
+            if flag2[i] == 0:
+                missres.append([var3[i], var4[i]])
+        ########################
+        #eva[0]是召回率
+        if var1 != 0:
+            eva.append(100 * (var1 - len(missres)) / var1)
+        else:
+            eva.append(100 * (var1 - len(missres)))
+        # wrongloc = []
+        # for item in wrongres:
+        #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
+        # missloc = []
+        # for item in missres:
+        #     missloc.append([map[0][item[0]],map[0][item[1]]])
+    else:
+        ind2 = [0, 0, 0]
+        if var1 != 0:
+            eva = [0, 0]
+
+        else:
+            eva = [100, 100]
+        wrongres = []
+        missres = []
 
 
     return tempclf
@@ -155,44 +210,58 @@ def clfcastest(clfs,data,label,data2,label2,sust,Y):
         drawtree(tempclf[1],'tree')
     datawait = data2[sec]
     labelwait = label2[sec]
-    temppre = tempclf[1].predict(datawait)
-    ind2 = []
-    ind2.append(accuracy_score(labelwait, temppre))
-    ind2.append(recall_score(labelwait, temppre))
-    ind2.append(precision_score(labelwait, temppre))
-    var1, var2, var3, var4 = AHIcal(labelwait, 1)
-    var5, var6, var7, var8 = AHIcal(temppre, 10)
+    var1, var2, var3, var4 = AHIcal(label2, 1)
+    if len(datawait) != 0:
+        temppre = tempclf[1].predict(datawait)
+        ind2 = []
+        ind2.append(accuracy_score(labelwait, temppre))
+        ind2.append(recall_score(labelwait, temppre))
+        ind2.append(precision_score(labelwait, temppre))
 
-    res = []
-    flag = [0] * var5
-    wrongres = []
-    eva = []
-    for i in range(var5):
-        # tempflag = []
-        for k in range(var1):
-            if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
-                    var7[i] <= var3[k] and var8[i] >= var4[k]):
-                res.append([i, k])
-                flag[i] = 1
-        # res.append(tempflag)
-        if flag[i] == 0:
-            wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
-    flag2 = [0] * var1
-    missres = []
-    for item in res:
-        flag2[item[1]] = 1
-    for i in range(var1):
-        if flag2[i] == 0:
-            missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
-    wrongloc = []
-    for item in wrongres:
-        wrongloc.append([map[0][item[0]],map[0][item[1]]])
-    missloc = []
-    for item in missres:
-        missloc.append([map[0][item[0]],map[0][item[1]]])
+        var5, var6, var7, var8 = AHIcal(temppre, 10)
+        var7 = map[0][var7]
+        var8 = map[0][var8]
+        res = []
+        flag = [0] * var5
+        wrongres = []
+        eva = []
+        for i in range(var5):
+            # tempflag = []
+            for k in range(var1):
+                if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+                        var7[i] <= var3[k] and var8[i] >= var4[k]):
+                    res.append([i, k])
+                    flag[i] = 1
+            # res.append(tempflag)
+            if flag[i] == 0:
+                wrongres.append([var7[i], var8[i]])
+        eva.append(100 * sum(flag) / len(flag))
+        flag2 = [0] * var1
+        missres = []
+        for item in res:
+            flag2[item[1]] = 1
+        for i in range(var1):
+            if flag2[i] == 0:
+                missres.append([var3[i], var4[i]])
+        if var1 !=0:
+            eva.append(100 * (var1 - len(missres)) / var1)
+        else:
+            eva.append(100*(var1-len(missres)))
+        # wrongloc = []
+        # for item in wrongres:
+        #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
+        # missloc = []
+        # for item in missres:
+        #     missloc.append([map[0][item[0]],map[0][item[1]]])
+    else:
+        ind2 = [0,0,0]
+        if var1 !=0:
+            eva = [0,0]
 
+        else:
+            eva = [100,100]
+        wrongres = []
+        missres = []
 
     return ind1,ind2,eva,wrongres,missres
 def clfcas(clfs,data,label,data2,label2,sust,Y):
