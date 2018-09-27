@@ -878,8 +878,8 @@ def parop(data, label, l, N):
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
     # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
     #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
-    par4 = {'min_samples_split': [50, 150, 250, 350, 450, 550, 1000], \
-            'min_samples_leaf': [100, 250, 500, 750, 1000], 'max_depth': [4, 5,6,7]}
+    par4 = {'min_samples_split': [10,50,100], \
+            'min_samples_leaf': [150], 'max_depth': [30]}
     # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
     #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
     # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
@@ -918,10 +918,11 @@ def parop(data, label, l, N):
         for i in range(N):
             res[str(clf[count])[0:3]].setdefault(i, {})
             for scoler in scoring:
-                tempclf = GridSearchCV(clf[count], pars[count], cv=5, scoring=scoler, n_jobs=4)
+                tempclf = GridSearchCV(clf[count], pars[count], cv=2, scoring=scoler, n_jobs=4,return_train_score=True)
                 tempclf.fit(data[i], label[i])
                 score = tempclf.cv_results_
-                res[str(clf[count])[0:3]][i].setdefault(scoler, score['mean_test_score'])
+                res[str(clf[count])[0:3]][i].setdefault("test"+scoler, score['mean_test_score'])
+                res[str(clf[count])[0:3]][i].setdefault("train" + scoler, score['mean_train_score'])
     return res,pars
 
 def createahiset(data,label,P,N):

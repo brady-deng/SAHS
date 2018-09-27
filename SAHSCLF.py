@@ -7,24 +7,32 @@ import pandas as pd
 
 if __name__ == '__main__':
     ################################
+    #超参数评优
+    ################################
+    # data, label = function.load_data('f60-1-notao.xlsx', 1)
+    # data,label = function.createdataset(data,label,0.5,1,5)
+    # res,pars = function.parop(data,label,3,1)
+    # rea = function.resana913(res,5,['accuracy','recall','precision'])
+    # print(rea)
+    ################################
     #926结果再现
     ################################
-    data,label = function.load_data('f60-1-notao.xlsx',1)
-    data2,label2 = function.load_data('f20-1-7.xlsx',1)
-    datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.dataseg(
-        data[0], label[0], data2[0], label2[0], 60, 20, 0.5)
-    clfs,num1,num2 = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
-    tempres, = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
-    print(tempres)
+    # data,label = function.load_data('f60-1-notao.xlsx',1)
+    # data2,label2 = function.load_data('f20-1-7.xlsx',1)
+    # datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.dataseg(
+    #     data[0], label[0], data2[0], label2[0], 60, 20, 0.5)
+    # clfs,num1,num2 = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
+    # tempres, = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
+    # print(tempres)
     #######################
 #926
 #########################
     # # 级联分类器K折交叉训练
 
-    # data,label = function.load_data('f60-1-notao.xlsx',1)
-    # data2,label2 = function.load_data('f20-1-7.xlsx',1)
-    # res = function.clfcaskfold(data,label,data2,label2)
-    # print(res)
+    data,label = function.load_data('f60-1-notao.xlsx',1)
+    data2,label2 = function.load_data('f20-1-7.xlsx',1)
+    res = function.clfcaskfold(data,label,data2,label2)
+    print(res)
 
 
     # 单分类器训练
@@ -42,13 +50,14 @@ if __name__ == '__main__':
     #######################
 
     # function.clfcas(["Dec", "Dec"], data[0], label[0], data2[0], label2[0], 0, 1)
-    # data3, label3 = function.load_data('f20-1-sp.xlsx', 1)
-    # function.clfcas(["Dec", "Dec"], data[0], label[0], data3[0], label3[0], 0, 1)
-    # res,pars = function.parop(data,label,3,1)
-    # rea = function.resana913(res,5,['accuracy','recall','precision'])
-    # res2,pars2 = function.parop(data2,label2,3,1)
-    # rea2 = function.resana913(res2,5,['accuracy','recall','precision'])
-    # print(rea)
+    data, label = function.load_data('f60-1-notao.xlsx', 1)
+    data,label = function.createdataset(data,label,0.5,1,5)
+    # # function.clfcas(["Dec", "Dec"], data[0], label[0], data3[0], label3[0], 0, 1)
+    res,pars = function.parop(data,label,3,1)
+    rea = function.resana913(res,5,['accuracy','recall','precision'])
+    # # res2,pars2 = function.parop(data2,label2,3,1)
+    # # rea2 = function.resana913(res2,5,['accuracy','recall','precision'])
+    print(rea)
 
     # res,flag = function.AHIres(["Dec"],data[0],label[0])
 
