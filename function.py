@@ -44,12 +44,13 @@ from mpl_toolkits.mplot3d import Axes3D
 # casdata，产生K折交叉训练数据
 # clfcaskfold，K折交叉训练并且返回训练结果
 ###########################################
-def clfcaskfold(data,label,data2,label2):
-    N = int(input('Please input the number of the subjects you want to train and test:'))
+def clfcaskfold(data,label,data2,label2,N):
+
     P = float(input('Please input the proportion of the dataset:'))
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
     res = []
+    resave = np.zeros([N,13])
     for i in range(N):
         resi = []
         datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(data[i], label[i], data2[i], label2[i], 60, 20, P)
@@ -61,12 +62,14 @@ def clfcaskfold(data,label,data2,label2):
             resmat[k] = [num2,num1,tempres[0][0],tempres[0][1],tempres[0][2],tempres[1][0],tempres[1][1],tempres[1][2],tempres[2][0],tempres[2][1],tempres[-3],tempres[-2],tempres[-1]]
         resmat[-1,:] = sum(resmat)/int(1/P)
         resmat[-1,-3:] = sum(resmat[0:-1,-3:])
-        resmat[-1,8] = 1 - (resmat[-1,10]/(resmat[-1,12]-resmat[-1,11]))
+        resmat[-1,8] = 1 - (resmat[-1,10]/(resmat[-1,12]-resmat[-1,11]+resmat[-1,10]))
+        # resmat[-1, 8] = 1 - (resmat[-1, 10] / (resmat[-1, 12] - resmat[-1, 11]))
         resmat[-1,9] = 1 - resmat[-1,11]/resmat[-1,12]
         res.append(resmat)
+        resave[i] = resmat[-1]
 
 
-    return res
+    return res,resave
 def casdata(data1,label1,data2,label2,WT1,WT2,P):
     l1 = len(label1)
     l2 = len(label2)
