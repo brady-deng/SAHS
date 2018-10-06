@@ -9,11 +9,11 @@ if __name__ == '__main__':
     ################################
     #超参数评优
     ################################
-    # data, label = function.load_data('f60-1-notao.xlsx', 1)
-    # data,label = function.createdataset(data,label,0.5,1,5)
-    # res,pars = function.parop(data,label,3,1)
-    # rea = function.resana913(res,5,['accuracy','recall','precision'])
-    # print(rea)
+    data, label = function.load_data('f60-1-notao.xlsx', 1)
+    data,label = function.createdataset(data,label,0.5,1,5)
+    res,pars = function.parop(data,label,3,1)
+    rea = function.resana913(res,5,['accuracy','recall','precision'])
+    print(rea)
     ################################
     #926结果再现
     ################################
@@ -31,6 +31,8 @@ if __name__ == '__main__':
     N = int(input('Please input the number of the subjects you want to train and test:'))
     data,label = function.load_data('f60-7.xlsx', N)
     data2,label2 = function.load_data('f20-7.xlsx', N)
+    data, label = function.createdataset(data, label, 0.5, N, 5)
+    data2, label2 = function.createdataset(data2, label2, 0.5, N, 5)
     # data,label = function.load_data('f60-1-notao.xlsx', N)
     # data2,label2 = function.load_data('f20-1-7.xlsx', N)
     res,resave = function.clfcaskfold(data,label,data2,label2,N)

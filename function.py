@@ -42,7 +42,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # AHItrain，单分类器训练
 # AHItest，单分类器测试
 # casdata，产生K折交叉训练数据
-# clfcaskfold，K折交叉训练并且返回训练结果
+# clfcaskfold，级联分类器K折交叉训练并且返回训练结果
 ###########################################
 def clfcaskfold(data,label,data2,label2,N):
 
@@ -127,12 +127,21 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
                 comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
                 ind1 = input(comment).split()
                 ind1 = [int(num) for num in ind1]
-
-                tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
-                                                 max_depth=int(ind1[2]),random_state=0))
+                if i == 0:
+                    tempclf.append(DecisionTreeClassifier(class_weight={0:1,1:5}, min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
+                                                     max_depth=int(ind1[2]),random_state=0))
+                else:
+                    tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]),
+                                                          min_samples_leaf=int(ind1[1]),
+                                                          max_depth=int(ind1[2]), random_state=0))
                 count+=1
             else:
-                tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind[i*3]),
+                if i == 0:
+                    tempclf.append(DecisionTreeClassifier(class_weight={0:1,1:5}, min_samples_split=int(ind[i * 3]),
+                                                          min_samples_leaf=int(ind[i * 3 + 1]),
+                                                          max_depth=int(ind[i * 3 + 2]), random_state=0))
+                else:
+                    tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind[i*3]),
                                                       min_samples_leaf=int(ind[i*3+1]),
                                                       max_depth=int(ind[i*3+2]),random_state=0))
         elif clfs[i] == "Ext":
@@ -233,6 +242,7 @@ def clfcastest(clfs,data,label,data2,label2,sust,Y):
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
+    ob1,ob2,ob3,ob4 = AHIcal(label, 1)
     tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 50)
     sec = np.zeros(len(label2),dtype = bool)
     for i in range(tempvar1):
@@ -876,12 +886,12 @@ def parop(data, label, l, N):
     ###########################
     #四号分类器与五号分类器，DT与ET
     ###########################
-    clf4 = DecisionTreeClassifier(class_weight='balanced',random_state=0)
+    clf4 = DecisionTreeClassifier(class_weight={0:1,1:10},random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced',random_state=0)
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
     # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
     #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
-    par4 = {'min_samples_split': [10,50,100], \
+    par4 = {'min_samples_split': [100], \
             'min_samples_leaf': [150], 'max_depth': [30]}
     # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
     #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
