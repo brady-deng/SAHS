@@ -4,45 +4,88 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler,StandardScaler,Normalizer
 import pandas as pd
+import json
 
 if __name__ == '__main__':
     ################################
     #超参数评优
     ################################
-    data, label = function.load_data('f60-1-notao.xlsx', 1)
-    data,label = function.createdataset(data,label,0.5,1,5)
-    res,pars = function.parop(data,label,3,1)
-    rea = function.resana913(res,5,['accuracy','recall','precision'])
-    print(rea)
+    # classweight = input('Please input the classweight of the decision tree(** **):')
+    # classweight = [int(item) for item in classweight.split()]
+    # if classweight[0] != 0:
+    #     wei = {0:classweight[0],1:classweight[1]}
+    # else:
+    #     wei = 'balanced'
+    # data, label = function.load_data('f2023.xlsx', 1)
+    # data,label = function.createdataset(data,label,0.5,1,5)
+    # res,pars = function.parop(data,label,3,1,classweight=wei)
+    # rea = function.resana913(res,5,['accuracy','recall','precision'])
+    # print(rea)
     ################################
     #926结果再现
     ################################
+    # classweight = input('Please input the classweight of the decision tree(** ** ** **):')
+    # classweight = [int(item) for item in classweight.split()]
+    # if classweight[2] == 0:
+    #     wei = [{0:classweight[0],1:classweight[1]},'balanced']
+    # else:
+    #     wei = [{0: classweight[0], 1: classweight[1]}, {0:classweight[2],1:classweight[3]}]
     # data,label = function.load_data('f60-1-notao.xlsx',1)
     # data2,label2 = function.load_data('f20-1-7.xlsx',1)
     # datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = function.dataseg(
     #     data[0], label[0], data2[0], label2[0], 60, 20, 0.5)
-    # clfs,num1,num2 = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0)
-    # tempres, = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
-    # print(tempres)
+    # clfs,num1,num2 = function.clfcastrain(["Dec","Dec"],datatrain1,labeltrain1,datatrain2,labeltrain2,0,0,classweight = wei)
+    # tempres = function.clfcastest(clfs,datatest1,labeltest1,datatest2,labeltest2,0,0)
+    # print(tempres[0])
+    # print(tempres[1])
+    # print(tempres[2])
     #######################
 #926
 #########################
-    # # 级联分类器K折交叉训练
+    # 级联分类器K折交叉训练
     N = int(input('Please input the number of the subjects you want to train and test:'))
-    data,label = function.load_data('f60-7.xlsx', N)
-    data2,label2 = function.load_data('f20-7.xlsx', N)
-    data, label = function.createdataset(data, label, 0.5, N, 5)
-    data2, label2 = function.createdataset(data2, label2, 0.5, N, 5)
+    classweight = input('Please input the classweight of the decision tree(** ** ** **):')
+    classweight = [int(item) for item in classweight.split()]
+    wei = []
+    if classweight[0] == 0:
+        wei.append('balanced')
+    else:
+        wei.append({0:classweight[0],1:classweight[1]})
+    if classweight[2] == 0:
+        wei.append('balanced')
+    else:
+        wei.append({0:classweight[2],1:classweight[3]})
+    data,label = function.load_data('f60.xlsx', N)
+    data2,label2 = function.load_data('f20.xlsx', N)
+
+    # data, label = function.createdataset(data, label, 0.5, N, 2)
+    # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
+    # ind = np.array([ 0,  1,  2,  6,  7,  9, 13, 17, 18, 19, 20, 21, 22])
+    # data = data[ind]
+    # label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
+    # N = len(ind)
     # data,label = function.load_data('f60-1-notao.xlsx', N)
     # data2,label2 = function.load_data('f20-1-7.xlsx', N)
-    res,resave = function.clfcaskfold(data,label,data2,label2,N)
+    res,resave = function.clfcaskfold(data,label,data2,label2,N,classweight = wei)
     print(res)
 
 
     # 单分类器训练
-    # datatrain,labeltrain,datatest,labeltest = function.get_dataset(data2,label2,0.7)
-    # clfs = function.AHItrain(["Dec"],datatrain[0],labeltrain[0])
-    # function.AHItest(clfs,datatest[0],labeltest[0])
+    # N = int(input('Please input the number of the subjects you want to train:'))
+    # data,label = function.load_data('f6023.xlsx', N)
+    # data2,label2 = function.load_data('f2023.xlsx', N)
+    # ind = np.array([ 0,  1,  2,  6,  7,  9, 13, 17, 18, 19, 20, 21, 22])
+    # data = data[ind]
+    # label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
+    # res = function.clfkfold("Ran",data,label,N)
+    # print(res[0])
+    # print(res[1])
+    # print(res[2])
+    # print(res[3])
 
     #######################
     #9-15OB tree
@@ -53,7 +96,7 @@ if __name__ == '__main__':
     #9-22测试
     #######################
 
-    # function.clfcas(["Dec", "Dec"], data[0], label[0], data2[0], label2[0], 0, 1)
+    # # function.clfcas(["Dec", "Dec"], data[0], label[0], data2[0], label2[0], 0, 1)
     # data, label = function.load_data('f60-1-notao.xlsx', 1)
     # data,label = function.createdataset(data,label,0.5,1,5)
     # # # function.clfcas(["Dec", "Dec"], data[0], label[0], data3[0], label3[0], 0, 1)

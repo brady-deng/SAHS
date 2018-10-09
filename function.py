@@ -1,8 +1,9 @@
 import pandas as pd
 from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier,ExtraTreeClassifier,export_graphviz
-from sklearn.ensemble import AdaBoostClassifier,BaggingClassifier,RandomForestClassifier,VotingClassifier,ExtraTreesClassifier
-from sklearn.neighbors import KNeighborsClassifier,RadiusNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier, export_graphviz
+from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, RandomForestClassifier, VotingClassifier, \
+    ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier, RadiusNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.model_selection import cross_val_score, cross_validate, GridSearchCV, KFold
@@ -41,40 +42,83 @@ from mpl_toolkits.mplot3d import Axes3D
 # getdataset，按比例获得训练集、测试集，输入的是包含各被试的data、label以及数据集切割比例P，返回的是训练集以及测试集
 # AHItrain，单分类器训练
 # AHItest，单分类器测试
-# casdata，产生K折交叉训练数据
+# casdata，为级联分类器产生K折交叉训练数据
 # clfcaskfold，级联分类器K折交叉训练并且返回训练结果
+# clfkfold,单分类器交叉训练结果
 ###########################################
-def clfcaskfold(data,label,data2,label2,N):
-
-    P = float(input('Please input the proportion of the dataset:'))
+def clfkfold(clf,data,label,N):
+    ######################################
+    #单分类器交叉验证
+    #输入的是分类器名称，data，label以及被试数目
+    #返回的score包含acu、recall、precision
+    ######################################
+    ind = input('Please input the par of the Decision tree(** ** **):').split() #决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
+    ind = [int(item) for item in ind]
+    classweight = input('Please input the classweight of the decision tree(** **):') #决策树的类权重
+    classweight = [int(item) for item in classweight.split()]
+    # wei，决策树的类权重
+    if classweight[0] != 0:
+        wei = {0:classweight[0],1:classweight[1]}
+    else:
+        wei = 'balanced'
+    if clf == "Dec":
+        tempclf = DecisionTreeClassifier(class_weight=wei, min_samples_split=int(ind[0]),
+                                                          min_samples_leaf=int(ind[1]),
+                                                          max_depth=int(ind[2]), random_state=0)
+    if clf == "Ran":
+        tempclf = RandomForestClassifier(n_estimators=20,n_jobs=4,class_weight=wei, min_samples_split=int(ind[0]),
+                                                          min_samples_leaf=int(ind[1]),
+                                                          max_depth=int(ind[2]), random_state=0)
+    acuscore = []
+    recascore = []
+    prescore = []
+    for i in range(N):
+        acuscore.append(cross_val_score(tempclf,data[i],label[i],n_jobs=4,cv=2,scoring='accuracy')) #分类器交叉训练得到的正确率
+        recascore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='recall')) #分类器交叉训练得到的召回率
+        prescore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='precision'))   #分类器交叉训练得到的精准率
+    score = []
+    for i in range(N):
+        score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
+    return score
+def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanced']):
+    #级联分类器交叉训练函数
+    P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
     res = []
-    resave = np.zeros([N,13])
+    resave = np.zeros([N, 16])
     for i in range(N):
         resi = []
-        datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(data[i], label[i], data2[i], label2[i], 60, 20, P)
-        resmat = np.zeros([int(1 / P)+1, 13])
-        for k in range(int(1/P)):
-            clfs,num1,num2 = clfcastrain(["Dec","Dec"],datatrain1[k],labeltrain1[k],datatrain2[k],labeltrain2[k],0,0,ind)
-            tempres = clfcastest(clfs,datatest1[k],labeltest1[k],datatest2[k],labeltest2[k],0,0)
+        datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(
+            data[i], label[i], data2[i], label2[i], 60, 20, P)  #切割获得训练集、测试集
+        resmat = np.zeros([int(1 / P) + 1, 16])
+        for k in range(int(1 / P)):
+            clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
+                                           0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
+            tempres = clfcastest(clfs, datatest1[k], labeltest1[k], datatest2[k], labeltest2[k], 0, 0)
             resi.append(tempres)
-            resmat[k] = [num2,num1,tempres[0][0],tempres[0][1],tempres[0][2],tempres[1][0],tempres[1][1],tempres[1][2],tempres[2][0],tempres[2][1],tempres[-3],tempres[-2],tempres[-1]]
-        resmat[-1,:] = sum(resmat)/int(1/P)
-        resmat[-1,-3:] = sum(resmat[0:-1,-3:])
-        resmat[-1,8] = 1 - (resmat[-1,10]/(resmat[-1,12]-resmat[-1,11]+resmat[-1,10]))
+            resmat[k] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
+                         tempres[1][2], tempres[-1][0], tempres[-1][1], tempres[-1][2],tempres[2][0], tempres[2][1],
+                         tempres[-4], tempres[-3], tempres[-2]]
+        #结果统计矩阵，训练集阳性样本书、阴性样本数，60s测试结果、20s测试结果、级联分类器片段测试结果、事件测试结果，预测错误的事件，
+        #错失的事件、人工标注数据中的总的时间。
+        resmat[-1, :] = sum(resmat) / int(1 / P)
+        resmat[-1, -3:] = sum(resmat[0:-1, -3:])
+        resmat[-1, 11] = 1 - (resmat[-1, 13] / (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]))
         # resmat[-1, 8] = 1 - (resmat[-1, 10] / (resmat[-1, 12] - resmat[-1, 11]))
-        resmat[-1,9] = 1 - resmat[-1,11]/resmat[-1,12]
+        resmat[-1, 12] = 1 - resmat[-1, 14] / resmat[-1, 15]
         res.append(resmat)
         resave[i] = resmat[-1]
 
+    return res, resave
 
-    return res,resave
-def casdata(data1,label1,data2,label2,WT1,WT2,P):
+
+def casdata(data1, label1, data2, label2, WT1, WT2, P):
+    #级联分类器的数据切割获得（1/P）折训练数据集、测试数据集
     l1 = len(label1)
     l2 = len(label2)
-    lte = int(l1*P)
-    k = int(1/P)
+    lte = int(l1 * P)
+    k = int(1 / P)
     datatrain1 = []
     datatrain2 = []
     datatest1 = []
@@ -85,35 +129,41 @@ def casdata(data1,label1,data2,label2,WT1,WT2,P):
     labeltest2 = []
     for i in range(k):
         ind = np.zeros(l1, dtype=bool)
-        ind[i*lte:(i+1)*lte] = True
-        datatest1.append( data1[ind])
-        labeltest1.append( label1[ind])
+        ind[i * lte:(i + 1) * lte] = True
+        datatest1.append(data1[ind])
+        labeltest1.append(label1[ind])
         ind = ~ind
-        datatrain1.append( data1[ind])
-        labeltrain1.append( label1[ind])
+        datatrain1.append(data1[ind])
+        labeltrain1.append(label1[ind])
         ind = np.zeros(l2, dtype=bool)
-        ind[i*lte:((i+1)*lte+WT1-WT2)] = True
-        datatest2.append( data2[ind])
-        labeltest2.append( label2[ind])
+        ind[i * lte:((i + 1) * lte + WT1 - WT2)] = True
+        datatest2.append(data2[ind])
+        labeltest2.append(label2[ind])
         ind = ~ind
-        datatrain2.append( data2[ind])
-        labeltrain2.append( label2[ind])
+        datatrain2.append(data2[ind])
+        labeltrain2.append(label2[ind])
     return datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2
-def dataseg(data1,label1,data2,label2,WT1,WT2,P):
+
+
+def dataseg(data1, label1, data2, label2, WT1, WT2, P):
+    #按时间直接对数据进行单次切割
     l = len(label1)
-    ltr = int(l*P)
-    lte = l-ltr
+    ltr = int(l * P)
+    lte = l - ltr
     datatrain1 = data1[:ltr]
     labeltrain1 = label1[:ltr]
     datatest1 = data1[ltr:]
     labeltest1 = label1[ltr:]
-    ltr2 = ltr+WT1-WT2
+    ltr2 = ltr + WT1 - WT2
     datatrain2 = data2[:ltr2]
     labeltrain2 = label2[:ltr2]
     datatest2 = data2[ltr2:]
     labeltest2 = label2[ltr2:]
-    return datatrain1,labeltrain1,datatest1,labeltest1,datatrain2,labeltrain2,datatest2,labeltest2
-def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
+    return datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2
+
+
+def clfcastrain(clfs, data, label, data2, label2, sust, Y, ind=[], classweight=['balanced', 'balanced']):
+    #级联分类器训练函数，返回的是级联分类器与训练集的阳性样本与阴性样本数
     tempclf = []
     count = 1
     # sust = 20
@@ -124,49 +174,59 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
             tempclf.append(GaussianNB())
         elif clfs[i] == "Dec":
             if len(ind) == 0:
-                comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
+                comment = 'Please input the ind' + str(count) + '[min_samples_split,min_samples_leaf,max_depth]:'
                 ind1 = input(comment).split()
                 ind1 = [int(num) for num in ind1]
                 if i == 0:
-                    tempclf.append(DecisionTreeClassifier(class_weight={0:1,1:5}, min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
-                                                     max_depth=int(ind1[2]),random_state=0))
-                else:
-                    tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]),
+                    tempclf.append(DecisionTreeClassifier(class_weight=classweight[0], min_samples_split=int(ind1[0]),
                                                           min_samples_leaf=int(ind1[1]),
                                                           max_depth=int(ind1[2]), random_state=0))
-                count+=1
+                else:
+                    tempclf.append(DecisionTreeClassifier(class_weight=classweight[1], min_samples_split=int(ind1[0]),
+                                                          min_samples_leaf=int(ind1[1]),
+                                                          max_depth=int(ind1[2]), random_state=0))
+                count += 1
             else:
                 if i == 0:
-                    tempclf.append(DecisionTreeClassifier(class_weight={0:1,1:5}, min_samples_split=int(ind[i * 3]),
-                                                          min_samples_leaf=int(ind[i * 3 + 1]),
-                                                          max_depth=int(ind[i * 3 + 2]), random_state=0))
+                    tempclf.append(
+                        DecisionTreeClassifier(class_weight=classweight[0], min_samples_split=int(ind[i * 3]),
+                                               min_samples_leaf=int(ind[i * 3 + 1]),
+                                               max_depth=int(ind[i * 3 + 2]), random_state=0))
                 else:
-                    tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind[i*3]),
-                                                      min_samples_leaf=int(ind[i*3+1]),
-                                                      max_depth=int(ind[i*3+2]),random_state=0))
+                    tempclf.append(
+                        DecisionTreeClassifier(class_weight=classweight[1], min_samples_split=int(ind[i * 3]),
+                                               min_samples_leaf=int(ind[i * 3 + 1]),
+                                               max_depth=int(ind[i * 3 + 2]), random_state=0))
         elif clfs[i] == "Ext":
             tempclf.append(ExtraTreeClassifier())
         elif clfs[i] == "SVC":
             tempclf.append(SVC())
-    tempclf[0].fit(data,label)
+        elif clfs[i] == "Ran":
+            if i == 0:
+                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                                   class_weight = classweight[0],max_depth=ind[i*3+2],n_estimators=10,min_samples_split=ind[i*3],min_samples_leaf=ind[i*3+1]))
+            else:
+                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                                   class_weight = classweight[1],max_depth=ind[i*3+2],n_estimators=20,min_samples_split=ind[i*3],min_samples_leaf=ind[i*3+1]))
+    tempclf[0].fit(data, label)
     temppre = tempclf[0].predict(data)
     ind1 = []
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
     tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 50)
-    sec = np.zeros(len(label2),dtype = bool)
+    sec = np.zeros(len(label2), dtype=bool)
     for i in range(tempvar1):
-        sec[(tempvar3[i]-sust):(tempvar4[i]+60-20+sust)] = True
+        sec[(tempvar3[i] - sust):(tempvar4[i] + 60 - 20 + sust)] = True
     map = np.where(sec == True)
 
     # data2 = data[sec]
     # label2 = label[sec]
 
-    tempclf[1].fit(data2,label2)
+    tempclf[1].fit(data2, label2)
     if Y:
-        drawtree(tempclf[0],'tree1')
-        drawtree(tempclf[1],'tree2')
+        drawtree(tempclf[0], 'tree1')
+        drawtree(tempclf[1], 'tree2')
 
     datawait = data2[sec]
     labelwait = label2[sec]
@@ -197,8 +257,11 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
             if flag[i] == 0:
                 wrongres.append([var7[i], var8[i]])
         ########################
-        #eva[0]是精准率
-        eva.append(100 * sum(flag) / len(flag))
+        # eva[0]是精准率
+        if len(flag) == 0:
+            eva.append(0)
+        else:
+            eva.append(100 * sum(flag) / len(flag))
         flag2 = [0] * var1
         missres = []
         for item in res:
@@ -207,7 +270,7 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
             if flag2[i] == 0:
                 missres.append([var3[i], var4[i]])
         ########################
-        #eva[0]是召回率
+        # eva[0]是召回率
         if var1 != 0:
             eva.append(100 * (var1 - len(missres)) / var1)
         else:
@@ -225,73 +288,131 @@ def clfcastrain(clfs,data,label,data2,label2,sust,Y,ind = []):
             wrongres = []
             missres = []
             for k in range(var1):
-                missres.append([var3[k],var4[k]])
+                missres.append([var3[k], var4[k]])
 
         else:
             eva = [100, 100]
             wrongres = []
             missres = []
 
+    return tempclf, sum(label2), len(label2) - sum(label2)
 
-    return tempclf,sum(label2),len(label2)-sum(label2)
-def clfcastest(clfs,data,label,data2,label2,sust,Y):
-    tempclf = clfs
+def eventdetect(var1,var2,var3,var4,var5,var6,var7,var8):
+    res = []
+    flag = [0] * var5
+    wrongres = []
+    eva = []
+    for i in range(var5):
+        # tempflag = []
+        for k in range(var1):
+            if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+                    var7[i] <= var3[k] and var8[i] >= var4[k]):
+                res.append([i, k])
+                flag[i] = 1
+        # res.append(tempflag)
+        if flag[i] == 0:
+            wrongres.append([var7[i], var8[i]])
+    if var5 != 0:
+        eva.append(100 * sum(flag) / len(flag))
+    else:
+        eva.append(0)
+    flag2 = [0] * var1
+    missres = []
+    for item in res:
+        flag2[item[1]] = 1
+    for i in range(var1):
+        if flag2[i] == 0:
+            missres.append([var3[i], var4[i]])
+    if var1 != 0:
+        eva.append(100 * (var1 - len(missres)) / var1)
+    else:
+        eva.append(100 * (var1 - len(missres)))
+    return wrongres,missres,eva,res
+def clfcastest(clfs, data, label, data2, label2, sust, Y):
+    #############################
+    #clfs，级联分类器，list类型
+    #data，60s测试数据
+    #data2，20s测试数据
+    #sust，60s窗口延长时间
+    #Y，是否画出决策树标志
+    #############################
+    tempclf = clfs  #集成刚才训练好的分类器
     count = 1
-    temppre = tempclf[0].predict(data)
-    ind1 = []
+    temppre = tempclf[0].predict(data)  #60s预测输出
+    ind1 = []   #ind1，60s数据测试性能
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
-    ob1,ob2,ob3,ob4 = AHIcal(label, 1)
-    tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 50)
-    sec = np.zeros(len(label2),dtype = bool)
+    ob1, ob2, ob3, ob4 = AHIcal(label, 1)
+    tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 50)    #从60s片段之中获得apnea事件
+    res20 = np.zeros(len(label2))
+    sec = np.zeros(len(label2), dtype=bool)
     for i in range(tempvar1):
-        sec[(tempvar3[i]-sust):(tempvar4[i]+60-20+sust)] = True
-    map = np.where(sec == True)
+        sec[(tempvar3[i] - sust):(tempvar4[i] + 60 - 20 + sust)] = True     #筛出60s窗口中的阳性窗口
+    map = np.where(sec == True)     #获得data2中的阳性窗口的索引
     if Y:
-        drawtree(tempclf[1],'tree')
-    datawait = data2[sec]
-    labelwait = label2[sec]
-    var1, var2, var3, var4 = AHIcal(label2, 1)
+        drawtree(tempclf[1], 'tree')
+    datawait = data2[sec]   #从60s阳性窗口中继承20s阳性窗口
+    labelwait = label2[sec]   #从60s阳性窗口中继承20s阳性窗口
+    var1, var2, var3, var4 = AHIcal(label2, 1)  #计算人工标注中的ah事件
     if len(datawait) != 0:
         temppre = tempclf[1].predict(datawait)
+        tempob = tempclf[1].predict(data2)
+        sec = ~sec
+        tempob[sec] = 0
         ind2 = []
         ind2.append(accuracy_score(labelwait, temppre))
         ind2.append(recall_score(labelwait, temppre))
         ind2.append(precision_score(labelwait, temppre))
-
+        ind3 = []
+        ind3.append(accuracy_score(label2, tempob))
+        ind3.append(recall_score(label2, tempob))
+        ind3.append(precision_score(label2, tempob))
+        ob5,ob6,ob7,ob8 = AHIcal(tempob,10)
         var5, var6, var7, var8 = AHIcal(temppre, 10)
-        var7 = map[0][var7]
+        var7 = map[0][var7] #将预测出的事件起始点映射到data2的索引当中
         var8 = map[0][var8]
-        res = []
-        flag = [0] * var5
-        wrongres = []
-        eva = []
-        for i in range(var5):
-            # tempflag = []
-            for k in range(var1):
-                if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
-                        var7[i] <= var3[k] and var8[i] >= var4[k]):
-                    res.append([i, k])
-                    flag[i] = 1
-            # res.append(tempflag)
-            if flag[i] == 0:
-                wrongres.append([var7[i], var8[i]])
-        if var5 != 0:
-            eva.append(100 * sum(flag) / len(flag))
-        else:
-            eva.append(0)
-        flag2 = [0] * var1
-        missres = []
-        for item in res:
-            flag2[item[1]] = 1
-        for i in range(var1):
-            if flag2[i] == 0:
-                missres.append([var3[i], var4[i]])
-        if var1 !=0:
-            eva.append(100 * (var1 - len(missres)) / var1)
-        else:
-            eva.append(100*(var1-len(missres)))
+        for i in range(len(var7)):
+            res20[var7[i]:var8[i]] = 1
+        segscore = []
+        segscore.append(accuracy_score(label2,res20))
+        segscore.append(recall_score(label2, res20))
+        segscore.append(precision_score(label2, res20))
+        # res = []
+        # flag = [0] * var5
+        # wrongres = []
+        # eva = []
+        # for i in range(var5):
+        #     # tempflag = []
+        #     for k in range(var1):
+        #         if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+        #                 var7[i] <= var3[k] and var8[i] >= var4[k]):
+        #             res.append([i, k])
+        #             flag[i] = 1
+        #     # res.append(tempflag)
+        #     if flag[i] == 0:
+        #         wrongres.append([var7[i], var8[i]])
+        # if var5 != 0:
+        #     eva.append(100 * sum(flag) / len(flag))
+        # else:
+        #     eva.append(0)
+        # flag2 = [0] * var1
+        # missres = []
+        # for item in res:
+        #     flag2[item[1]] = 1
+        # for i in range(var1):
+        #     if flag2[i] == 0:
+        #         missres.append([var3[i], var4[i]])
+        # if var1 != 0:
+        #     eva.append(100 * (var1 - len(missres)) / var1)
+        # else:
+        #     eva.append(100 * (var1 - len(missres)))
+        wrongres,missres,eva,res = eventdetect(var1,var2,var3,var4,var5,var6,var7,var8)
+        resob1,resob2,resob3,resob4 = eventdetect(var1,var2,var3,var4,ob5,ob6,ob7,ob8)
+
+
+
+
         # wrongloc = []
         # for item in wrongres:
         #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
@@ -300,22 +421,29 @@ def clfcastest(clfs,data,label,data2,label2,sust,Y):
         #     missloc.append([map[0][item[0]],map[0][item[1]]])
     else:
         ind2 = [0, 0, 0]
+        segscore = []
+        segscore.append(accuracy_score(label2,res20))
+        segscore.append(recall_score(label2, res20))
+        segscore.append(precision_score(label2, res20))
         if var1 != 0:
             # ind2 = [0, 0, 0]
             eva = [0, 0]
             wrongres = []
             missres = []
             for k in range(var1):
-                missres.append([var3[k],var4[k]])
+                missres.append([var3[k], var4[k]])
 
         else:
 
             eva = [100, 100]
             wrongres = []
             missres = []
+    #返回的是60s窗口的测试结果、20s窗口的测试结果、事件的测试结果、错误的事件、错失的事件、测试集的阳性样本数、测试集的阴性样本数
+    #错误事件的个数、错失事件的个数、人工标注数据的事件个数、级联分类器的分类结果。
+    return ind1, ind2, eva, wrongres, missres, sum(label2), len(label2) - sum(label2), len(wrongres), len(missres), var1,segscore
 
-    return ind1,ind2,eva,wrongres,missres,sum(label2),len(label2)-sum(label2),len(wrongres),len(missres),var1
-def clfcas(clfs,data,label,data2,label2,sust,Y):
+
+def clfcas(clfs, data, label, data2, label2, sust, Y):
     tempclf = []
     count = 1
     # sust = 20
@@ -325,35 +453,36 @@ def clfcas(clfs,data,label,data2,label2,sust,Y):
         elif item == "Gau":
             tempclf.append(GaussianNB())
         elif item == "Dec":
-            comment = 'Please input the ind'+str(count)+'[min_samples_split,min_samples_leaf,max_depth]:'
+            comment = 'Please input the ind' + str(count) + '[min_samples_split,min_samples_leaf,max_depth]:'
             ind1 = input(comment).split()
             ind1 = [int(num) for num in ind1]
 
-            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]), min_samples_leaf=int(ind1[1]),
-                                             max_depth=int(ind1[2])))
-            count+=1
+            tempclf.append(DecisionTreeClassifier(class_weight='balanced', min_samples_split=int(ind1[0]),
+                                                  min_samples_leaf=int(ind1[1]),
+                                                  max_depth=int(ind1[2])))
+            count += 1
         elif item == "Ext":
             tempclf.append(ExtraTreeClassifier())
         elif item == "SVC":
             tempclf.append(SVC())
-    tempclf[0].fit(data,label)
+    tempclf[0].fit(data, label)
     temppre = tempclf[0].predict(data)
     ind1 = []
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
     tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 5)
-    sec = np.zeros(len(label2),dtype = bool)
+    sec = np.zeros(len(label2), dtype=bool)
     for i in range(tempvar1):
-        sec[(tempvar3[i]-sust):(tempvar4[i]+60-20+sust)] = True
+        sec[(tempvar3[i] - sust):(tempvar4[i] + 60 - 20 + sust)] = True
     map = np.where(sec == True)
 
     # data2 = data[sec]
     # label2 = label[sec]
 
-    tempclf[1].fit(data2,label2)
+    tempclf[1].fit(data2, label2)
     if Y:
-        drawtree(tempclf[1],'tree')
+        drawtree(tempclf[1], 'tree')
     datawait = data2[sec]
     labelwait = label2[sec]
     # tempclf[1].fit(datawait, labelwait)
@@ -390,19 +519,20 @@ def clfcas(clfs,data,label,data2,label2,sust,Y):
     eva.append(100 * (var1 - len(missres)) / var1)
     wrongloc = []
     for item in wrongres:
-        wrongloc.append([map[0][item[0]],map[0][item[1]]])
+        wrongloc.append([map[0][item[0]], map[0][item[1]]])
     missloc = []
     for item in missres:
-        missloc.append([map[0][item[0]],map[0][item[1]]])
+        missloc.append([map[0][item[0]], map[0][item[1]]])
+
+    return ind1, ind2, eva, wrongres, missres
 
 
-    return ind1,ind2,eva,wrongres,missres
-def AHItrain(clfs,data,label):
+def AHItrain(clfs, data, label):
     ##################################
-    #clfs,分类器名称
-    #data，带训练数据
-    #label，带训练标签
-    #返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
+    # clfs,分类器名称
+    # data，带训练数据
+    # label，带训练标签
+    # 返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
     ##################################
     ind = []
     for item in clfs:
@@ -417,85 +547,91 @@ def AHItrain(clfs,data,label):
             tempclf = ExtraTreeClassifier()
         elif item == "SVC":
             tempclf = SVC()
-    tempclf.fit(data,label)
+    tempclf.fit(data, label)
     # drawtree(tempclf,'tree')
-    pre =tempclf.predict(data)
-    ind.append(accuracy_score(label,pre))
-    ind.append(recall_score(label,pre))
-    ind.append(precision_score(label,pre))
-    var1,var2,var3,var4 = AHIcal(label,1)
+    pre = tempclf.predict(data)
+    ind.append(accuracy_score(label, pre))
+    ind.append(recall_score(label, pre))
+    ind.append(precision_score(label, pre))
+    var1, var2, var3, var4 = AHIcal(label, 1)
     # var5,var6,var7,var8 = smoothres(pre,20)
     var5, var6, var7, var8 = AHIcal(pre, 5)
     res = []
-    flag = [0]*var5
+    flag = [0] * var5
     wrongres = []
     eva = []
     for i in range(var5):
         # tempflag = []
         for k in range(var1):
-            if (var7[i]>var3[k]and var7[i]<var4[k]) or (var8[i]>var3[k]and var8[i]<var4[k]) or (var7[i]<var3[k] and var8[i]>var4[k]):
-                res.append([i,k])
+            if (var7[i] > var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] < var4[k]) or (
+                    var7[i] < var3[k] and var8[i] > var4[k]):
+                res.append([i, k])
                 flag[i] = 1
         # res.append(tempflag)
         if flag[i] == 0:
-            wrongres.append([var7[i],var8[i]])
-    eva.append(100*sum(flag)/len(flag))
-    flag2 = [0]*var1
+            wrongres.append([var7[i], var8[i]])
+    eva.append(100 * sum(flag) / len(flag))
+    flag2 = [0] * var1
     missres = []
     for item in res:
         flag2[item[1]] = 1
     for i in range(var1):
         if flag2[i] == 0:
-            missres.append([var3[i],var4[i]])
-    eva.append(100*(var1-len(missres))/var1)
+            missres.append([var3[i], var4[i]])
+    eva.append(100 * (var1 - len(missres)) / var1)
     return tempclf
-def AHItest(clfs,data,label):
+
+
+def AHItest(clfs, data, label):
     ##################################
-    #clfs,分类器名称
-    #data，带训练数据
-    #label，带训练标签
-    #返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
+    # clfs,分类器名称
+    # data，带训练数据
+    # label，带训练标签
+    # 返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
     ##################################
     ind = []
     tempclf = clfs
     # tempclf.fit(data,label)
     # drawtree(tempclf,'tree')
-    pre =tempclf.predict(data)
-    ind.append(accuracy_score(label,pre))
-    ind.append(recall_score(label,pre))
-    ind.append(precision_score(label,pre))
-    var1,var2,var3,var4 = AHIcal(label,1)
+    pre = tempclf.predict(data)
+    ind.append(accuracy_score(label, pre))
+    ind.append(recall_score(label, pre))
+    ind.append(precision_score(label, pre))
+    var1, var2, var3, var4 = AHIcal(label, 1)
     # var5,var6,var7,var8 = smoothres(pre,20)
-    var5, var6, var7, var8 = AHIcal(pre, 5)
+    var5, var6, var7, var8 = AHIcal(pre, 10)
     res = []
-    flag = [0]*var5
+    flag = [0] * var5
     wrongres = []
     eva = []
     for i in range(var5):
         # tempflag = []
         for k in range(var1):
-            if (var7[i]>var3[k]and var7[i]<var4[k]) or (var8[i]>var3[k]and var8[i]<var4[k]) or (var7[i]<var3[k] and var8[i]>var4[k]):
-                res.append([i,k])
+            if (var7[i] > var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] < var4[k]) or (
+                    var7[i] < var3[k] and var8[i] > var4[k]):
+                res.append([i, k])
                 flag[i] = 1
         # res.append(tempflag)
         if flag[i] == 0:
-            wrongres.append([var7[i],var8[i]])
-    eva.append(100*sum(flag)/len(flag))
-    flag2 = [0]*var1
+            wrongres.append([var7[i], var8[i]])
+    eva.append(100 * sum(flag) / len(flag))
+    flag2 = [0] * var1
     missres = []
     for item in res:
         flag2[item[1]] = 1
     for i in range(var1):
         if flag2[i] == 0:
-            missres.append([var3[i],var4[i]])
-    eva.append(100*(var1-len(missres))/var1)
-    return ind,wrongres,eva,missres
-def AHIres(clfs,data,label):
+            missres.append([var3[i], var4[i]])
+    eva.append(100 * (var1 - len(missres)) / var1)
+    return ind, wrongres, eva, missres
+
+
+def AHIres(clfs, data, label):
     ##################################
-    #clfs,分类器名称
-    #data，带训练数据
-    #label，带训练标签
-    #返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
+    # clfs,分类器名称
+    # data，带训练数据
+    # label，带训练标签
+    # 返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
     ##################################
     ind = []
     for item in clfs:
@@ -510,46 +646,47 @@ def AHIres(clfs,data,label):
             tempclf = ExtraTreeClassifier()
         elif item == "SVC":
             tempclf = SVC()
-    tempclf.fit(data,label)
-    drawtree(tempclf,'tree')
-    pre =tempclf.predict(data)
-    ind.append(accuracy_score(label,pre))
-    ind.append(recall_score(label,pre))
-    ind.append(precision_score(label,pre))
-    var1,var2,var3,var4 = AHIcal(label,1)
+    tempclf.fit(data, label)
+    drawtree(tempclf, 'tree')
+    pre = tempclf.predict(data)
+    ind.append(accuracy_score(label, pre))
+    ind.append(recall_score(label, pre))
+    ind.append(precision_score(label, pre))
+    var1, var2, var3, var4 = AHIcal(label, 1)
     # var5,var6,var7,var8 = smoothres(pre,20)
     var5, var6, var7, var8 = AHIcal(pre, 5)
     res = []
-    flag = [0]*var5
+    flag = [0] * var5
     wrongres = []
     eva = []
     for i in range(var5):
         # tempflag = []
         for k in range(var1):
-            if (var7[i]>var3[k]and var7[i]<var4[k]) or (var8[i]>var3[k]and var8[i]<var4[k]) or (var7[i]<var3[k] and var8[i]>var4[k]):
-                res.append([i,k])
+            if (var7[i] > var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] < var4[k]) or (
+                    var7[i] < var3[k] and var8[i] > var4[k]):
+                res.append([i, k])
                 flag[i] = 1
         # res.append(tempflag)
         if flag[i] == 0:
-            wrongres.append([var7[i],var8[i]])
-    eva.append(100*sum(flag)/len(flag))
-    flag2 = [0]*var1
+            wrongres.append([var7[i], var8[i]])
+    eva.append(100 * sum(flag) / len(flag))
+    flag2 = [0] * var1
     missres = []
     for item in res:
         flag2[item[1]] = 1
     for i in range(var1):
         if flag2[i] == 0:
-            missres.append([var3[i],var4[i]])
-    eva.append(100*(var1-len(missres))/var1)
-    return ind,wrongres,eva,missres
+            missres.append([var3[i], var4[i]])
+    eva.append(100 * (var1 - len(missres)) / var1)
+    return ind, wrongres, eva, missres
 
 
-def AHIval(clfs,data,label):
-###########################################
-# clfs，待检验分类器
-# data，切分好的数据集
-# label，切分好的标签集
-###########################################
+def AHIval(clfs, data, label):
+    ###########################################
+    # clfs，待检验分类器
+    # data，切分好的数据集
+    # label，切分好的标签集
+    ###########################################
     tempclfs = []
     ind = []
     for item in clfs:
@@ -558,7 +695,8 @@ def AHIval(clfs,data,label):
         elif item == "Gau":
             tempclf = GaussianNB()
         elif item == "Dec":
-            tempclf = DecisionTreeClassifier(class_weight='balanced',min_samples_split = 50, min_samples_leaf= 500, max_depth= 5)
+            tempclf = DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=500,
+                                             max_depth=5)
         elif item == "Ext":
             tempclf = ExtraTreeClassifier()
         elif item == "SVC":
@@ -569,37 +707,36 @@ def AHIval(clfs,data,label):
     res = {}
     for clf in clfs:
         l = len(data)
-        respre.setdefault(str(clf)[0:3],{})
+        respre.setdefault(str(clf)[0:3], {})
         for i in range(l):
             templ = len(data[i])
-            respre[str(clf)[0:3]].setdefault(i,[])
-            res.setdefault(i,[])
+            respre[str(clf)[0:3]].setdefault(i, [])
+            res.setdefault(i, [])
             for k in range(templ):
                 tempind = []
                 datatrain = data[i][k]
-                datatest = data[i][1-k]
+                datatest = data[i][1 - k]
                 labeltrain = label[i][k]
-                labeltest = label[i][1-k]
-                clf.fit(datatrain,labeltrain)
+                labeltest = label[i][1 - k]
+                clf.fit(datatrain, labeltrain)
                 temppre = clf.predict(datatest)
-                tempind.append(accuracy_score(labeltest,temppre))
-                tempind.append(recall_score(labeltest,temppre))
-                tempind.append(precision_score(labeltest,temppre))
-                var1,var2,var3,var4 = smoothres(temppre)
-                var5,var6,var7,var8 = AHIcal(labeltest)
-                respre[str(clf)[0:3]][i].append([var1,var2])
-                res[i].append([var5,var6])
+                tempind.append(accuracy_score(labeltest, temppre))
+                tempind.append(recall_score(labeltest, temppre))
+                tempind.append(precision_score(labeltest, temppre))
+                var1, var2, var3, var4 = smoothres(temppre)
+                var5, var6, var7, var8 = AHIcal(labeltest)
+                respre[str(clf)[0:3]][i].append([var1, var2])
+                res[i].append([var5, var6])
                 ind.append(tempind)
-    return res,respre,ind
+    return res, respre, ind
 
 
-
-def AHIcal(label,thre=50):
-###########################################
-#计算AHI的函数
-#label按时间排列的标签
-#返回的是aha次数以及每次持续的时长以及相应的开始以及结束的时间
-###########################################
+def AHIcal(label, thre=50):
+    ###########################################
+    # 计算AHI的函数
+    # label按时间排列的标签
+    # 返回的是aha次数以及每次持续的时长以及相应的开始以及结束的时间
+    ###########################################
     templ = len(label)
     startflag = 0
     endflag = 0
@@ -609,13 +746,13 @@ def AHIcal(label,thre=50):
     cacheend = []
     aha = 0
     # thre = 50
-    for i in range(1,templ):
-        if label[i-1] == 0 and label[i] == 1:
+    for i in range(1, templ):
+        if label[i - 1] == 0 and label[i] == 1:
             startflag = 1
             endflag = 0
             tempstart = i
             # cachestart.append(i)
-        if label[i-1] == 1 and label[i] == 0:
+        if label[i - 1] == 1 and label[i] == 0:
             endflag = 1
             startflag = 0
             tempend = i
@@ -623,8 +760,8 @@ def AHIcal(label,thre=50):
         if startflag == 1 and endflag == 0:
             tempcount += 1
         if endflag == 1 and startflag == 0:
-            if tempcount>=thre:
-                aha+=1
+            if tempcount >= thre:
+                aha += 1
                 cachelen.append(tempcount)
                 cachestart.append(tempstart)
                 cacheend.append(tempend)
@@ -633,53 +770,62 @@ def AHIcal(label,thre=50):
             tempcount = 0
             tempstart = 0
             tempend = 0
-    return aha,cachelen,cachestart,cacheend
-def smoothres(label,thre=50):
-    l = len(label)
-    for i in range(4,l-3):
-        if label[i-3] == 1 and label[i-2] == 1 and label[i - 1] == 1 and label[i] == 0 \
-            and label[i+1] == 1 and label[i+2] == 1 and label[i+3] == 1:
-            label[i] = 1
-        if label[i-3] == 0 and label[i-2] == 0 and label[i - 1] == 0 and label[i] == 1 \
-            and label[i+1] == 0 and label[i+2] == 0 and label[i+3] == 0:
-            label[i] = 0
-    var1,var2,var3,var4 = AHIcal(label,thre)
-    return var1,var2,var3,var4
+    return aha, cachelen, cachestart, cacheend
 
-def OB(data,label,name,max_depth,min_samples_split,min_samples_leaf):
+
+def smoothres(label, thre=50):
+    l = len(label)
+    for i in range(4, l - 3):
+        if label[i - 3] == 1 and label[i - 2] == 1 and label[i - 1] == 1 and label[i] == 0 \
+                and label[i + 1] == 1 and label[i + 2] == 1 and label[i + 3] == 1:
+            label[i] = 1
+        if label[i - 3] == 0 and label[i - 2] == 0 and label[i - 1] == 0 and label[i] == 1 \
+                and label[i + 1] == 0 and label[i + 2] == 0 and label[i + 3] == 0:
+            label[i] = 0
+    var1, var2, var3, var4 = AHIcal(label, thre)
+    return var1, var2, var3, var4
+
+
+def OB(data, label, name, max_depth, min_samples_split, min_samples_leaf):
     ########################################
-    #data,训练数据
-    #label，训练标签
-    #name，输出文件名称
-    #max_depth，决策树最大深度
-    #min samples split...均为决策树参数
+    # data,训练数据
+    # label，训练标签
+    # name，输出文件名称
+    # max_depth，决策树最大深度
+    # min samples split...均为决策树参数
     #########################################
 
-    clf = DecisionTreeClassifier(class_weight='balanced',max_depth=max_depth,\
-                                 min_samples_split=min_samples_split,min_samples_leaf\
-                                     = min_samples_leaf,random_state=0)
-    plottree(clf,data,label,name)
-def plottree(clf,data,label,name):
-    ##############################
-    #clf,分类器
-    #data，训练数据
-    #label，数据标签
-    ##############################
-    clf.fit(data,label)
+    clf = DecisionTreeClassifier(class_weight='balanced', max_depth=max_depth, \
+                                 min_samples_split=min_samples_split, min_samples_leaf \
+                                     =min_samples_leaf, random_state=0)
+    plottree(clf, data, label, name)
 
-    score_a = cross_val_score(clf,data,label,scoring = 'accuracy',cv = 5,n_jobs=4)
-    score_r = cross_val_score(clf,data,label,scoring = 'recall',cv = 5,n_jobs=4)
-    score_p = cross_val_score(clf,data,label,scoring = 'precision',cv = 5,n_jobs=4)
-    res = [score_a.mean(),score_r.mean(),score_p.mean()]
-    dot_data = export_graphviz(clf,out_file=None)
+
+def plottree(clf, data, label, name):
+    ##############################
+    # clf,分类器
+    # data，训练数据
+    # label，数据标签
+    ##############################
+    clf.fit(data, label)
+
+    score_a = cross_val_score(clf, data, label, scoring='accuracy', cv=5, n_jobs=4)
+    score_r = cross_val_score(clf, data, label, scoring='recall', cv=5, n_jobs=4)
+    score_p = cross_val_score(clf, data, label, scoring='precision', cv=5, n_jobs=4)
+    res = [score_a.mean(), score_r.mean(), score_p.mean()]
+    dot_data = export_graphviz(clf, out_file=None)
     graph = graphviz.Source(dot_data)
     graph.render(name)
     print(res)
-def drawtree(clf,name):
+
+
+def drawtree(clf, name):
     # clf.fit(data,label)
-    dot_data = export_graphviz(clf,out_file=None)
+    dot_data = export_graphviz(clf, out_file=None)
     graph = graphviz.Source(dot_data)
     graph.render(name)
+
+
 def load_data(filename, N):
     ########################
     # 读取特征xlsx文件
@@ -693,7 +839,8 @@ def load_data(filename, N):
     for i in range(N):
         label.append(data[str(i + 1)].iloc[:, -1].values)
         data_train.append(data[str(i + 1)].iloc[:, 0:-1].values)
-
+    # data_train = np.array(data_train)
+    # label = np.array(label)
     return data_train, label
 
 
@@ -855,12 +1002,12 @@ def train_911(data, label, P, N, N_seg):
     return (res)
 
 
-def parop(data, label, l, N):
+def parop(data, label, l, N,classweight = 'balanced'):
     ###########################
     # 超参数调优，l：最后评价参数个数，N被试个数
     ###########################
     ###########################
-    #1号分类器，SVM
+    # 1号分类器，SVM
     ###########################
     # clf1 = SVC(class_weight='balanced')
     # par1 = {'C': [0.1, 0.5, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 3.0],'gamma':[0.1,0.5,1.0,1.5,2.0]}
@@ -870,12 +1017,12 @@ def parop(data, label, l, N):
     # par1 = {'C':[0.05,0.1,0.15,0.2],'gamma':[1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0]}
     # par1 = {'C': [0.05, 0.1, 0.15, 0.2], 'gamma': [0.5,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00]}
     ###########################
-    #二号分类器，贝叶斯
+    # 二号分类器，贝叶斯
     ###########################
     # clf2 = GaussianNB()
     # par2 = {}
     ###########################
-    #三号分类器，Ada
+    # 三号分类器，Ada
     ###########################
     # clf3 = AdaBoostClassifier()
     # # # par3 = {'learning_rate': [0.1, 0.2, 0.5, 1.0,  1.5, 2.0],'n_estimators': [30, 35, 40, 45, 50, 55, 60]}
@@ -884,15 +1031,15 @@ def parop(data, label, l, N):
     #
     # # par3 = {'n_estimators':[50,55,60,65,70],'learning_rate':[0.1,0.2,0.3,0.4,0.5]}
     ###########################
-    #四号分类器与五号分类器，DT与ET
+    # 四号分类器与五号分类器，DT与ET
     ###########################
-    clf4 = DecisionTreeClassifier(class_weight={0:1,1:10},random_state=0)
+    # clf4 = DecisionTreeClassifier(class_weight=classweight, random_state=0)
     # clf5 = ExtraTreeClassifier(class_weight='balanced',random_state=0)
     # par4 = {'min_samples_split':[2,100,200],'min_samples_leaf':[1,50,100,150]}
     # par4 = {'min_samples_split':[50,150,250,350,450,550,1000],\
     #         'min_samples_leaf':[100,250,500,750,1000],'max_depth':[3,4,5]}
-    par4 = {'min_samples_split': [100], \
-            'min_samples_leaf': [150], 'max_depth': [30]}
+    # par4 = {'min_samples_split': [100], \
+    #         'min_samples_leaf': [100], 'max_depth': [10]}
     # par4 = {'min_samples_split': [100,300,500,700,900, 1000], \
     #         'min_samples_leaf': [100, 150,200,250,300,400, 500,], 'max_depth': [ 4, 5]}
     # par4 = {'min_samples_split': [100, 300, 500, 700, 900, 1000], \
@@ -904,26 +1051,26 @@ def parop(data, label, l, N):
     # clf7 = RadiusNeighborsClassifier()
     # par7 = {'radius':[0.5,1.0,1.5]}
     ###########################################
-    #ensemble方法
+    # ensemble方法
     ###########################################
     # clf8 = BaggingClassifier(max_features=1.0,\
     #                          oob_score=True,n_jobs=4,random_state=0)
     # par8 = {'base_estimator':[DecisionTreeClassifier(class_weight='balanced'),\
     #                           ExtraTreeClassifier(class_weight='balanced')],\
     #         'n_estimators':[10,20,30,40,50],'max_samples':[0.2,0.4,0.5,1.0],'max_features':[0.5]}
-    # clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=5,\
-    #                            n_jobs=4, oob_score=True,bootstrap=True)
-    #
-    # par9 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
-    #         'min_samples_leaf':[500,600,700,800,1000,1500]}
+    clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=10,\
+                               n_jobs=4, oob_score=True,bootstrap=True)
+
+    par9 = {'n_estimators':[20],'min_samples_split':[100],\
+            'min_samples_leaf':[150]}
     # clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
-    #                                class_weight = 'balanced',max_depth=5)
-    # par10 = {'n_estimators':[10,20,30,40,50],'min_samples_split':[100,300,500,700,900,1000],\
-    #          'min_samples_leaf':[500,600,700,800,1000,1500]}
+    #                                class_weight = 'balanced',max_depth=10)
+    # par10 = {'n_estimators':[20],'min_samples_split':[150],\
+    #          'min_samples_leaf':[100]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf4]
-    pars = [par4]
+    clf = [clf9]
+    pars = [par9]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
@@ -931,33 +1078,35 @@ def parop(data, label, l, N):
         for i in range(N):
             res[str(clf[count])[0:3]].setdefault(i, {})
             for scoler in scoring:
-                tempclf = GridSearchCV(clf[count], pars[count], cv=2, scoring=scoler, n_jobs=4,return_train_score=True)
+                tempclf = GridSearchCV(clf[count], pars[count], cv=2, scoring=scoler, n_jobs=4, return_train_score=True)
                 tempclf.fit(data[i], label[i])
                 score = tempclf.cv_results_
-                res[str(clf[count])[0:3]][i].setdefault("test"+scoler, score['mean_test_score'])
+                res[str(clf[count])[0:3]][i].setdefault("test" + scoler, score['mean_test_score'])
                 res[str(clf[count])[0:3]][i].setdefault("train" + scoler, score['mean_train_score'])
-    return res,pars
+    return res, pars
 
-def createahiset(data,label,P,N):
+
+def createahiset(data, label, P, N):
     ##########################
-    #data数据集
-    #label标签集合
-    #P切割集合的比例
-    #N被试数目
+    # data数据集
+    # label标签集合
+    # P切割集合的比例
+    # N被试数目
     ##########################
     datares = []
     labelres = []
     for i in range(N):
         templ = len(data[i])
-        segl = int(templ*P)
+        segl = int(templ * P)
         tempdata = []
         templabel = []
-        for k in range(int(1/P)):
-            tempdata.append(data[i][k*segl:(k+1)*segl])
-            templabel.append(label[i][k*segl:(k+1)*segl])
+        for k in range(int(1 / P)):
+            tempdata.append(data[i][k * segl:(k + 1) * segl])
+            templabel.append(label[i][k * segl:(k + 1) * segl])
         datares.append(tempdata)
         labelres.append(templabel)
-    return datares,labelres
+    return datares, labelres
+
 
 def createdataset(data, label, P, N, N_seg):
     #######################
@@ -999,6 +1148,8 @@ def createdataset(data, label, P, N, N_seg):
                     dataset[i] = np.vstack((dataset[i], temptrain))
                     labelset[i] = np.hstack((labelset[i], templatr))
                 del temptrain, templatr
+    dataset = np.array(dataset)
+    labelset = np.array(labelset)
     return dataset, labelset
 
 
