@@ -839,8 +839,8 @@ def load_data(filename, N):
     for i in range(N):
         label.append(data[str(i + 1)].iloc[:, -1].values)
         data_train.append(data[str(i + 1)].iloc[:, 0:-1].values)
-    # data_train = np.array(data_train)
-    # label = np.array(label)
+    data_train = np.array(data_train)
+    label = np.array(label)
     return data_train, label
 
 
