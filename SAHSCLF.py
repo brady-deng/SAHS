@@ -55,8 +55,8 @@ if __name__ == '__main__':
         wei.append('balanced')
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-23-1008.xlsx', N)
-    data2,label2 = function.load_data('f20-23-1008.xlsx', N)
+    data,label = function.load_data('f60-23-1012.xlsx', N)
+    data2,label2 = function.load_data('f20-23-1012.xlsx', N)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
@@ -74,20 +74,25 @@ if __name__ == '__main__':
 
     # 单分类器训练
     # N = int(input('Please input the number of the subjects you want to train:'))
-    # data,label = function.load_data('f60-1-1008.xlsx', N)
-    # data2,label2 = function.load_data('f20-1010.xlsx', N)
+    # data,label = function.load_data('f1012ob.xlsx', N)
+    # # data2,label2 = function.load_data('f20-1-1008.xlsx', N)
+    # # data3, label3 = function.load_data('f60-23-1008.xlsx', N)
+    # # data4, label4 = function.load_data('f20-23-1008.xlsx', N)
     # # data, label = function.createdataset(data, label, 0.5, N, 2)
-    # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
+    # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
     # # ind = np.array([ 0,  1,  2,  6,  7,  9, 13, 17, 18, 19, 20, 21, 22])
     # # data = data[ind]
     # # label = label[ind]
     # # data2 = data2[ind]
     # # label2 = label2[ind]
-    # res = function.clfkfold("Ran",data2,label2,N)
-    # print(res[0])
-    # print(res[1])
-    # print(res[2])
-    # print(res[3])
+    # res0 = function.clfkfold("Ran",data,label,N)
+    # # res1 = function.clfkfold("Ran", data2, label2, N)
+    # # res2 = function.clfkfold("Ran", data3, label3, N)
+    # # res3 = function.clfkfold("Ran", data4, label4, N)
+    # print(res0[0])
+    # # print(res1[1])
+    # # print(res2[2])
+    # # print(res3[3])
 
     #######################
     #9-15OB tree

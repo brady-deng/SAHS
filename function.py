@@ -86,29 +86,49 @@ def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanc
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
     res = []
-    resave = np.zeros([N, 16])
+    resave = np.zeros([N+1, 20])
     for i in range(N):
         resi = []
         datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(
             data[i], label[i], data2[i], label2[i], 60, 20, P)  #切割获得训练集、测试集
-        resmat = np.zeros([int(1 / P) + 1, 16])
+        resmat = np.zeros([int(1 / P) + 1, 20])
         for k in range(int(1 / P)):
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], datatest2[k], labeltest2[k], 0, 0)
             resi.append(tempres)
-            resmat[k] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
+            resmat[k,0:18] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
                          tempres[1][2], tempres[-1][0], tempres[-1][1], tempres[-1][2],tempres[2][0], tempres[2][1],
-                         tempres[-4], tempres[-3], tempres[-2]]
+                         tempres[-4], tempres[-3], tempres[-2],tempres[5],tempres[6]]
+            resmat[k,18] = resmat[k,8]*(resmat[k,16]+resmat[k,17])
+            resmat[k,19] = resmat[k,9]*resmat[k,16]
         #结果统计矩阵，训练集阳性样本书、阴性样本数，60s测试结果、20s测试结果、级联分类器片段测试结果、事件测试结果，预测错误的事件，
         #错失的事件、人工标注数据中的总的时间。
-        resmat[-1, :] = sum(resmat) / int(1 / P)
-        resmat[-1, -3:] = sum(resmat[0:-1, -3:])
+        resmat[-1, :] = sum(resmat[0:-1,:]) / int(1 / P)
+        resmat[-1,18] = sum(resmat[0:-1,18])
+        resmat[-1,19] = sum(resmat[0:-1,19])
+        resmat[-1,16] = sum(resmat[0:-1,16])
+        resmat[-1,17] = sum(resmat[0:-1,17])
+        resmat[-1, 8] = resmat[-1,18]/(resmat[-1,16]+resmat[-1,17])
+        resmat[-1, 9] = resmat[-1,19]/resmat[-1,16]
+        resmat[-1, 13:16] = sum(resmat[0:-1, 13:16])
         resmat[-1, 11] = 1 - (resmat[-1, 13] / (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]))
         # resmat[-1, 8] = 1 - (resmat[-1, 10] / (resmat[-1, 12] - resmat[-1, 11]))
         resmat[-1, 12] = 1 - resmat[-1, 14] / resmat[-1, 15]
         res.append(resmat)
         resave[i] = resmat[-1]
+    resave[-1, :] = sum(resave[0:-1,:]) / N
+    resave[-1, 18] = sum(resave[0:-1, 18])
+    resave[-1, 19] = sum(resave[0:-1, 19])
+    resave[-1, 16] = sum(resave[0:-1, 16])
+    resave[-1, 17] = sum(resave[0:-1, 17])
+    resave[-1, 8] = resave[-1, 18] / (resave[-1, 16] + resave[-1, 17])
+    resave[-1, 9] = resave[-1, 19] / resave[-1, 16]
+    resave[-1, 13:16] = sum(resave[0:-1, 13:16])
+    resave[-1, 11] = 1 - (resave[-1, 13] / (resave[-1, 15] - resave[-1, 14] + resave[-1, 13]))
+    # resave[-1, 8] = 1 - (resave[-1, 10] / (resave[-1, 12] - resave[-1, 11]))
+    resave[-1, 12] = 1 - resave[-1, 14] / resave[-1, 15]
+
 
     return res, resave
 
