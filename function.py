@@ -388,10 +388,10 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
         ind3.append(accuracy_score(label2, tempob))
         ind3.append(recall_score(label2, tempob))
         ind3.append(precision_score(label2, tempob))
-        ob5,ob6,ob7,ob8 = AHIcal(tempob,10)
-        var5, var6, var7, var8 = AHIcal(temppre, 10)
-        var7 = map[0][var7] #将预测出的事件起始点映射到data2的索引当中
-        var8 = map[0][var8]
+        var5,var6,var7,var8 = AHIcal(tempob,10)
+        # var5, var6, var7, var8 = AHIcal(temppre, 10)
+        # var7 = map[0][var7] #将预测出的事件起始点映射到data2的索引当中
+        # var8 = map[0][var8]
         for i in range(len(var7)):
             res20[var7[i]:var8[i]] = 1
         segscore = []
@@ -428,7 +428,7 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
         # else:
         #     eva.append(100 * (var1 - len(missres)))
         wrongres,missres,eva,res = eventdetect(var1,var2,var3,var4,var5,var6,var7,var8)
-        resob1,resob2,resob3,resob4 = eventdetect(var1,var2,var3,var4,ob5,ob6,ob7,ob8)
+        # resob1,resob2,resob3,resob4 = eventdetect(var1,var2,var3,var4,ob5,ob6,ob7,ob8)
 
 
 
