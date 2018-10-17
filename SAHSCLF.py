@@ -12,18 +12,19 @@ if __name__ == '__main__':
     ################################
     # classweight = input('Please input the classweight of the decision tree(** **):')
     # classweight = [int(item) for item in classweight.split()]
+    # N = int(input('Please input the index of the subject you want to train:'))
     # if classweight[0] != 0:
     #     wei = {0:classweight[0],1:classweight[1]}
     # else:
     #     wei = 'balanced'
-    # data, label = function.load_data('f2023.xlsx', 1)
-    # data,label = function.createdataset(data,label,0.5,1,5)
+    # data, label = function.load_data('f20-12-ob.xlsx', N)
+    # # data,label = function.createdataset(data,label,0.5,1,5)
     # res,pars = function.parop(data,label,3,1,classweight=wei)
     # rea = function.resana913(res,5,['accuracy','recall','precision'])
     # print(rea)
-    ################################
-    #926结果再现
-    ################################
+    ###############################
+    # 926结果再现
+    # ###############################
     # classweight = input('Please input the classweight of the decision tree(** ** ** **):')
     # classweight = [int(item) for item in classweight.split()]
     # if classweight[2] == 0:
@@ -43,7 +44,7 @@ if __name__ == '__main__':
 #926
 #########################
     # 级联分类器K折交叉训练
-    N = int(input('Please input the number of the subjects you want to train and test:'))
+    N = int(input('Please input the index of the subjects you want to train and test:'))
     classweight = input('Please input the classweight of the decision tree(** ** ** **):')
     classweight = [int(item) for item in classweight.split()]
     wei = []
@@ -55,8 +56,8 @@ if __name__ == '__main__':
         wei.append('balanced')
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-3-ob.xlsx', N)
-    data2,label2 = function.load_data('f20-3-ob.xlsx', N)
+    data,label = function.load_data('f60-1-ob.xlsx', N)
+    data2,label2 = function.load_data('f20-1-ob.xlsx', N)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
@@ -68,28 +69,37 @@ if __name__ == '__main__':
     # N = len(ind)
     # data,label = function.load_data('f60-1-notao.xlsx', N)
     # data2,label2 = function.load_data('f20-1-7.xlsx', N)
+    N = len(data)
     res,resave = function.clfcaskfold(data,label,data2,label2,N,classweight = wei)
     print(res)
 
 
-    # 单分类器训练
-    # N = int(input('Please input the number of the subjects you want to train:'))
-    # data,label = function.load_data('f1012ob.xlsx', N)
-    # # data2,label2 = function.load_data('f20-1-1008.xlsx', N)
-    # # data3, label3 = function.load_data('f60-23-1008.xlsx', N)
-    # # data4, label4 = function.load_data('f20-23-1008.xlsx', N)
-    # # data, label = function.createdataset(data, label, 0.5, N, 2)
-    # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
-    # # ind = np.array([ 0,  1,  2,  6,  7,  9, 13, 17, 18, 19, 20, 21, 22])
-    # # data = data[ind]
-    # # label = label[ind]
-    # # data2 = data2[ind]
-    # # label2 = label2[ind]
-    # res0 = function.clfkfold("Ran",data,label,N)
-    # # res1 = function.clfkfold("Ran", data2, label2, N)
-    # # res2 = function.clfkfold("Ran", data3, label3, N)
-    # # res3 = function.clfkfold("Ran", data4, label4, N)
+    # 单分类器训练与事件检测
+    # N = int(input('Please input the index of the subjects you want to train:'))
+    # data,label = function.load_data('f20-12-ob.xlsx', N)
+    # N = len(data)
+    # res0 = function.clfkfold("Ran", data, label, N)
     # print(res0[0])
+
+    # 单分类器事件检测
+    # N = int(input('Please input the index of the subjects you want to train:'))
+    # data,label = function.load_data('f20-12-ob.xlsx', N)
+    # N = len(data)
+    # data2,label2 = function.load_data('f20-1-1008.xlsx', N)
+    # data3, label3 = function.load_data('f60-23-1008.xlsx', N)
+    # data4, label4 = function.load_data('f20-23-1008.xlsx', N)
+    # data, label = function.createdataset(data, label, 0.5, N, 2)
+    # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
+    # ind = np.array([ 0,  1,  2,  6,  7,  9, 13, 17, 18, 19, 20, 21, 22])
+    # data = data[ind]
+    # label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
+
+    # res1 = function.clfkfold("Ran", data2, label2, N)
+    # res2 = function.clfkfold("Ran", data3, label3, N)
+    # res3 = function.clfkfold("Ran", data4, label4, N)
+
     # # print(res1[1])
     # # print(res2[2])
     # # print(res3[3])

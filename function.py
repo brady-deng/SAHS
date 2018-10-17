@@ -79,7 +79,20 @@ def clfkfold(clf,data,label,N):
     score = []
     for i in range(N):
         score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
-    return score
+    kf = KFold(n_splits=2)
+    eva = np.zeros((3,2))
+    count = 0
+    for train_index,test_index in kf.split(data[i]):
+        datatrain,labeltrain = data[i][train_index],label[i][train_index]
+        datatest,labeltest = data[i][test_index],label[i][test_index]
+        resclf = AHItrain(tempclf,datatrain,labeltrain)
+        tempres = AHItest(resclf,datatest,labeltest)
+        eva[count,:] = tempres[2]
+        count +=1
+    eva[-1,0] = eva[0:2,0].mean()
+    eva[-1,1] = eva[0:2,1].mean()
+
+    return score,eva
 def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanced']):
     #级联分类器交叉训练函数
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
@@ -555,18 +568,19 @@ def AHItrain(clfs, data, label):
     # 返回的是片段的分类评价指标，错误分类的ahi区间，区间准确度精准度，漏掉的ahi区间
     ##################################
     ind = []
-    for item in clfs:
-        if item == "Knn":
-            tempclf = KNeighborsClassifier()
-        elif item == "Gau":
-            tempclf = GaussianNB()
-        elif item == "Dec":
-            tempclf = DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=100,
-                                             max_depth=5)
-        elif item == "Ext":
-            tempclf = ExtraTreeClassifier()
-        elif item == "SVC":
-            tempclf = SVC()
+    # for item in clfs:
+    #     if item == "Knn":
+    #         tempclf = KNeighborsClassifier()
+    #     elif item == "Gau":
+    #         tempclf = GaussianNB()
+    #     elif item == "Dec":
+    #         tempclf = DecisionTreeClassifier(class_weight='balanced', min_samples_split=50, min_samples_leaf=100,
+    #                                          max_depth=5)
+    #     elif item == "Ext":
+    #         tempclf = ExtraTreeClassifier()
+    #     elif item == "SVC":
+    #         tempclf = SVC()
+    tempclf = clfs
     tempclf.fit(data, label)
     # drawtree(tempclf,'tree')
     pre = tempclf.predict(data)
@@ -856,11 +870,18 @@ def load_data(filename, N):
     data = pd.read_excel(filename, sheet_name=None)
     data_train = []
     label = []
-    for i in range(N):
-        label.append(data[str(i + 1)].iloc[:, -1].values)
-        data_train.append(data[str(i + 1)].iloc[:, 0:-1].values)
-    data_train = np.array(data_train)
-    label = np.array(label)
+    if N == 0:
+        N = 23
+        for i in range(N):
+            label.append(data[str(i + 1)].iloc[:, -1].values)
+            data_train.append(data[str(i + 1)].iloc[:, 0:-1].values)
+        data_train = np.array(data_train)
+        label = np.array(label)
+    else:
+        label.append(data[str(N)].iloc[:, -1].values)
+        data_train.append(data[str(N)].iloc[:, 0:-1].values)
+        data_train = np.array(data_train)
+        label = np.array(label)
     return data_train, label
 
 
@@ -1078,19 +1099,19 @@ def parop(data, label, l, N,classweight = 'balanced'):
     # par8 = {'base_estimator':[DecisionTreeClassifier(class_weight='balanced'),\
     #                           ExtraTreeClassifier(class_weight='balanced')],\
     #         'n_estimators':[10,20,30,40,50],'max_samples':[0.2,0.4,0.5,1.0],'max_features':[0.5]}
-    clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=10,\
-                               n_jobs=4, oob_score=True,bootstrap=True)
-
-    par9 = {'n_estimators':[20],'min_samples_split':[100],\
-            'min_samples_leaf':[150]}
-    # clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
-    #                                class_weight = 'balanced',max_depth=10)
-    # par10 = {'n_estimators':[20],'min_samples_split':[150],\
-    #          'min_samples_leaf':[100]}
+    # clf9 = ExtraTreesClassifier(class_weight='balanced',random_state = 0,max_depth=10,\
+    #                            n_jobs=4, oob_score=True,bootstrap=True)
+    #
+    # par9 = {'n_estimators':[20],'min_samples_split':[100],\
+    #         'min_samples_leaf':[150]}
+    clf10 = RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                                   class_weight = 'balanced',max_depth=50)
+    par10 = {'n_estimators':[20],'min_samples_split':[30],\
+             'min_samples_leaf':[30]}
     # clf = [clf1,clf2,clf3]
     # pars = [par1, par2, par3]
-    clf = [clf9]
-    pars = [par9]
+    clf = [clf10]
+    pars = [par10]
     res = {}
     scoring = ['accuracy', 'recall', 'precision']
     for count in range(len(clf)):
