@@ -56,27 +56,33 @@ if __name__ == '__main__':
         wei.append('balanced')
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-8-ob.xlsx', N)
-    data2,label2 = function.load_data('f10-8-ob.xlsx', N)
+    data,label = function.load_data('f60-23-1017.xlsx', N)
+    data2,label2 = function.load_data('f10-23-1018.xlsx', N)
     N = len(data)
+    ind = np.array([ 1,2,7,9,11,13,14,21])
+    data = data[ind]
+    label = label[ind]
+    data2 = data2[ind]
+    label2 = label2[ind]
+    N = len(ind)
     res,resave = function.clfcaskfold(data,label,data2,label2,N,classweight = wei)
     print(res)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
-    # ind = np.array([ 1,2,7,9,11,13,14,21])
-    # data = data[ind]
-    # label = label[ind]
-    # data2 = data2[ind]
-    # label2 = label2[ind]
-    # N = len(ind)
+
     # data,label = function.load_data('f60-1-notao.xlsx', N)
     # data2,label2 = function.load_data('f20-1-7.xlsx', N)
 
 
     # 单分类器训练与事件检测
     N = int(input('Please input the index of the subjects you want to train:'))
-    data,label = function.load_data('f10-8-ob.xlsx', N)
+    data,label = function.load_data('f10-23-1018.xlsx', N)
+    ind = np.array([ 1,2,7,9,11,13,14,21])
+    data = data[ind]
+    label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
     N = len(data)
     res0 = function.clfkfold("Ran", data, label, N)
     print(res0[0])

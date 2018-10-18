@@ -80,19 +80,24 @@ def clfkfold(clf,data,label,N):
     for i in range(N):
         score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
     kf = KFold(n_splits=2)
+    res = []
     eva = np.zeros((3,2))
     count = 0
-    for train_index,test_index in kf.split(data[i]):
-        datatrain,labeltrain = data[i][train_index],label[i][train_index]
-        datatest,labeltest = data[i][test_index],label[i][test_index]
-        resclf = AHItrain(tempclf,datatrain,labeltrain)
-        tempres = AHItest(resclf,datatest,labeltest)
-        eva[count,:] = tempres[2]
-        count +=1
-    eva[-1,0] = eva[0:2,0].mean()
-    eva[-1,1] = eva[0:2,1].mean()
+    for i in range(N):
+        count = 0
+        for train_index,test_index in kf.split(data[i]):
+            datatrain,labeltrain = data[i][train_index],label[i][train_index]
+            datatest,labeltest = data[i][test_index],label[i][test_index]
+            resclf = AHItrain(tempclf,datatrain,labeltrain)
+            tempres = AHItest(resclf,datatest,labeltest)
+            eva[count,:] = tempres[2]
+            count +=1
+        eva[-1, 0] = eva[0:2, 0].mean()
+        eva[-1, 1] = eva[0:2, 1].mean()
+        res.append(eva)
 
-    return score,eva
+
+    return score,res
 def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanced']):
     #级联分类器交叉训练函数
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
