@@ -81,10 +81,11 @@ def clfkfold(clf,data,label,N):
         score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
     kf = KFold(n_splits=2)
     res = []
-    eva = np.zeros((3,2))
+
     count = 0
     for i in range(N):
         count = 0
+        eva = np.zeros((3, 2))
         for train_index,test_index in kf.split(data[i]):
             datatrain,labeltrain = data[i][train_index],label[i][train_index]
             datatest,labeltest = data[i][test_index],label[i][test_index]

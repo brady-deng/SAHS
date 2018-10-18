@@ -44,29 +44,29 @@ if __name__ == '__main__':
 #926
 #########################
     # 级联分类器K折交叉训练
-    N = int(input('Please input the index of the subjects you want to train and test:'))
-    classweight = input('Please input the classweight of the decision tree(** ** ** **):')
-    classweight = [int(item) for item in classweight.split()]
-    wei = []
-    if classweight[0] == 0:
-        wei.append('balanced')
-    else:
-        wei.append({0:classweight[0],1:classweight[1]})
-    if classweight[2] == 0:
-        wei.append('balanced')
-    else:
-        wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-23-1017.xlsx', N)
-    data2,label2 = function.load_data('f10-23-1018.xlsx', N)
-    N = len(data)
-    ind = np.array([ 1,2,7,9,11,13,14,21])
-    data = data[ind]
-    label = label[ind]
-    data2 = data2[ind]
-    label2 = label2[ind]
-    N = len(ind)
-    res,resave = function.clfcaskfold(data,label,data2,label2,N,classweight = wei)
-    print(res)
+    # N = int(input('Please input the index of the subjects you want to train and test:'))
+    # classweight = input('Please input the classweight of the decision tree(** ** ** **):')
+    # classweight = [int(item) for item in classweight.split()]
+    # wei = []
+    # if classweight[0] == 0:
+    #     wei.append('balanced')
+    # else:
+    #     wei.append({0:classweight[0],1:classweight[1]})
+    # if classweight[2] == 0:
+    #     wei.append('balanced')
+    # else:
+    #     wei.append({0:classweight[2],1:classweight[3]})
+    # data,label = function.load_data('f60-23-1017.xlsx', N)
+    # data2,label2 = function.load_data('f10-23-1018.xlsx', N)
+    # N = len(data)
+    # ind = np.array([ 1,2,7,9,11,13,14,21])
+    # data = data[ind]
+    # label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
+    # N = len(ind)
+    # res,resave = function.clfcaskfold(data,label,data2,label2,N,classweight = wei)
+    # print(res)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
