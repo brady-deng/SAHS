@@ -68,17 +68,17 @@ def clfkfold(clf,data,label,N):
     if clf == "Ran":
         tempclf = RandomForestClassifier(n_estimators=20,n_jobs=4,class_weight=wei, min_samples_split=int(ind[0]),
                                                           min_samples_leaf=int(ind[1]),
-                                                          max_depth=int(ind[2]), random_state=0)
+                                                          max_depth=int(ind[2]), random_state=0, oob_score= True, max_features=1)
     acuscore = []
     recascore = []
     prescore = []
-    for i in range(N):
-        acuscore.append(cross_val_score(tempclf,data[i],label[i],n_jobs=4,cv=2,scoring='accuracy')) #分类器交叉训练得到的正确率
-        recascore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='recall')) #分类器交叉训练得到的召回率
-        prescore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='precision'))   #分类器交叉训练得到的精准率
-    score = []
-    for i in range(N):
-        score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
+    # for i in range(N):
+    #     acuscore.append(cross_val_score(tempclf,data[i],label[i],n_jobs=4,cv=2,scoring='accuracy')) #分类器交叉训练得到的正确率
+    #     recascore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='recall')) #分类器交叉训练得到的召回率
+    #     prescore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='precision'))   #分类器交叉训练得到的精准率
+    # score = []
+    # for i in range(N):
+    #     score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
     kf = KFold(n_splits=2)
     res = []
 
@@ -86,31 +86,47 @@ def clfkfold(clf,data,label,N):
     for i in range(N):
         count = 0
         eva = np.zeros((3, 2))
+        tempacu = []
+        temprec = []
+        temppr = []
         for train_index,test_index in kf.split(data[i]):
             datatrain,labeltrain = data[i][train_index],label[i][train_index]
             datatest,labeltest = data[i][test_index],label[i][test_index]
             resclf = AHItrain(tempclf,datatrain,labeltrain)
+            tempclf.fit(datatrain,labeltrain)
+            temppre = tempclf.predict(datatest)
+            tempacu.append(accuracy_score(labeltest,temppre))
+            temprec.append(recall_score(labeltest,temppre))
+            temppr.append(precision_score(labeltest,temppre))
             tempres = AHItest(resclf,datatest,labeltest)
             eva[count,:] = tempres[2]
             count +=1
+        tempacu = np.array(tempacu)
+        temprec = np.array(temprec)
+        temppr = np.array(temppr)
+        acuscore.append(tempacu)
+        recascore.append(temprec)
+        prescore.append(temppr)
         eva[-1, 0] = eva[0:2, 0].mean()
         eva[-1, 1] = eva[0:2, 1].mean()
         res.append(eva)
 
-
+    score = []
+    for i in range(N):
+        score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
     return score,res
-def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanced']):
+def clfcaskfold(data, label, data2, label2, N,WT1,WT2, classweight = ['balanced','balanced']):
     #级联分类器交叉训练函数
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
     res = []
-    resave = np.zeros([N+1, 20])
+    resave = np.zeros([N+1, 22])
     for i in range(N):
         resi = []
         datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(
-            data[i], label[i], data2[i], label2[i], 60, 20, P)  #切割获得训练集、测试集
-        resmat = np.zeros([int(1 / P) + 1, 20])
+            data[i], label[i], data2[i], label2[i], WT1, WT2, P)  #切割获得训练集、测试集
+        resmat = np.zeros([int(1 / P) + 1, 22])
         for k in range(int(1 / P)):
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
@@ -121,8 +137,9 @@ def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanc
                          tempres[-4], tempres[-3], tempres[-2],tempres[5],tempres[6]]
             resmat[k,18] = resmat[k,8]*(resmat[k,16]+resmat[k,17])
             resmat[k,19] = resmat[k,9]*resmat[k,16]
-        #结果统计矩阵，训练集阳性样本书、阴性样本数，60s测试结果、20s测试结果、级联分类器片段测试结果、事件测试结果，预测错误的事件，
-        #错失的事件、人工标注数据中的总的时间。
+        #结果统计矩阵，0训练集阳性样本书、1阴性样本数，2-460s测试结果、5-720s测试结果、8-10级联分类器片段测试结果、11-12事件测试结果，13预测错误的事件，
+        #14错失的事件、15人工标注数据中的总的时间、16测试集中的阳性片段数、17测试集中的阴性片段数、18预测正确的片段数、19预测正确的阳性片段数。
+        #20人工标注的AHI，21模型计算的AHI
         resmat[-1, :] = sum(resmat[0:-1,:]) / int(1 / P)
         resmat[-1,18] = sum(resmat[0:-1,18])
         resmat[-1,19] = sum(resmat[0:-1,19])
@@ -134,6 +151,9 @@ def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanc
         resmat[-1, 11] = 1 - (resmat[-1, 13] / (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]))
         # resmat[-1, 8] = 1 - (resmat[-1, 10] / (resmat[-1, 12] - resmat[-1, 11]))
         resmat[-1, 12] = 1 - resmat[-1, 14] / resmat[-1, 15]
+        resmat[-1, 20] = resmat[-1, 15] / ((resmat[-1, 16] + resmat[-1, 17] + WT2) / 3600)
+        resmat[-1, 21] = (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]) / (
+                    (resmat[-1, 16] + resmat[-1, 17] + WT2) / 3600)
         res.append(resmat)
         resave[i] = resmat[-1]
     resave[-1, :] = sum(resave[0:-1,:]) / N
@@ -147,6 +167,8 @@ def clfcaskfold(data, label, data2, label2, N, classweight = ['balanced','balanc
     resave[-1, 11] = 1 - (resave[-1, 13] / (resave[-1, 15] - resave[-1, 14] + resave[-1, 13]))
     # resave[-1, 8] = 1 - (resave[-1, 10] / (resave[-1, 12] - resave[-1, 11]))
     resave[-1, 12] = 1 - resave[-1, 14] / resave[-1, 15]
+    resave[-1,20] = resave[-1,15]/((resave[-1,16]+resave[-1,17]+WT2)/3600)
+    resave[-1,21] = (resave[-1,15]-resave[-1,14]+resave[-1,13])/((resave[-1,16]+resave[-1,17]+WT2)/3600)
 
 
     return res, resave
@@ -247,6 +269,20 @@ def clfcastrain(clfs, data, label, data2, label2, sust, Y, ind=[], classweight=[
             else:
                 tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
                                    class_weight = classweight[1],max_depth=ind[i*3+2],n_estimators=20,min_samples_split=ind[i*3],min_samples_leaf=ind[i*3+1]))
+    # 降采样
+    nump = sum(label)
+    numn = len(label)-nump
+    # tempk = int(numn/nump)
+    if numn > nump:
+        tempn = numn-nump
+        tempran = np.random.rand(numn)
+        tempsort = tempran.argsort()
+        tempind = tempsort[0:tempn]
+        ind_n = np.where(label == 0)
+        ind_forn = ind_n[0][tempind]
+        data = np.delete(data,ind_forn,axis=0)
+        label = np.delete(label,ind_forn,axis=0)
+
     tempclf[0].fit(data, label)
     temppre = tempclf[0].predict(data)
     ind1 = []
@@ -394,6 +430,7 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
     datawait = data2[sec]   #从60s阳性窗口中继承20s阳性窗口
     labelwait = label2[sec]   #从60s阳性窗口中继承20s阳性窗口
     var1, var2, var3, var4 = AHIcal(label2, 1)  #计算人工标注中的ah事件
+
     if len(datawait) != 0:
         temppre = tempclf[1].predict(datawait)
         tempob = tempclf[1].predict(data2)
