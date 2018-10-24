@@ -264,24 +264,24 @@ def clfcastrain(clfs, data, label, data2, label2, sust, Y, ind=[], classweight=[
             tempclf.append(SVC())
         elif clfs[i] == "Ran":
             if i == 0:
-                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,max_features=1,\
                                    class_weight = classweight[0],max_depth=ind[i*3+2],n_estimators=10,min_samples_split=ind[i*3],min_samples_leaf=ind[i*3+1]))
             else:
-                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,\
+                tempclf.append(RandomForestClassifier(bootstrap = True, oob_score= True, n_jobs=4, random_state=0,max_features=1,\
                                    class_weight = classweight[1],max_depth=ind[i*3+2],n_estimators=20,min_samples_split=ind[i*3],min_samples_leaf=ind[i*3+1]))
     # 降采样
-    nump = sum(label)
-    numn = len(label)-nump
-    # tempk = int(numn/nump)
-    if numn > nump:
-        tempn = numn-nump
-        tempran = np.random.rand(numn)
-        tempsort = tempran.argsort()
-        tempind = tempsort[0:tempn]
-        ind_n = np.where(label == 0)
-        ind_forn = ind_n[0][tempind]
-        data = np.delete(data,ind_forn,axis=0)
-        label = np.delete(label,ind_forn,axis=0)
+    # nump = sum(label)
+    # numn = len(label)-nump
+    # # tempk = int(numn/nump)
+    # if numn > nump:
+    #     tempn = numn-nump
+    #     tempran = np.random.rand(numn)
+    #     tempsort = tempran.argsort()
+    #     tempind = tempsort[0:tempn]
+    #     ind_n = np.where(label == 0)
+    #     ind_forn = ind_n[0][tempind]
+    #     data = np.delete(data,ind_forn,axis=0)
+    #     label = np.delete(label,ind_forn,axis=0)
 
     tempclf[0].fit(data, label)
     temppre = tempclf[0].predict(data)
