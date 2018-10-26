@@ -58,14 +58,14 @@ if __name__ == '__main__':
         wei.append('balanced')
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-23-1025.xlsx', N)
-    data2,label2 = function.load_data('f10-23-1025.xlsx', N)
+    data,label = function.load_data('f60-12-ob.xlsx', N)
+    data2,label2 = function.load_data('f10-12-ob.xlsx', N)
 
-    ind = np.array([ 0,1,2,7,9,11,13,14,21])
-    data = data[ind]
-    label = label[ind]
-    data2 = data2[ind]
-    label2 = label2[ind]
+    # ind = np.array([ 0,1,2,7,9,11,13,14,21])
+    # data = data[ind]
+    # label = label[ind]
+    # data2 = data2[ind]
+    # label2 = label2[ind]
     N = len(data)
     res,resave = function.clfcaskfold(data,label,data2,label2,N,WT1,WT2,classweight = wei)
     print(res)
