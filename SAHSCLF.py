@@ -58,8 +58,8 @@ if __name__ == '__main__':
         wei.append('balanced')
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label = function.load_data('f60-23-1017.xlsx', N)
-    data2,label2 = function.load_data('f10-23-1024.xlsx', N)
+    data,label = function.load_data('f60-23-1025.xlsx', N)
+    data2,label2 = function.load_data('f10-23-1025.xlsx', N)
 
     ind = np.array([ 0,1,2,7,9,11,13,14,21])
     data = data[ind]
