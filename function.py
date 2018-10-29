@@ -227,6 +227,12 @@ def clfcastrain(clfs, data, label, data2, label2, sust, Y, ind=[], classweight=[
     #级联分类器训练函数，返回的是级联分类器与训练集的阳性样本与阴性样本数
     tempclf = []
     count = 1
+    tempk = int(len(label)/sum(label))
+    if classweight[0] == 1028:
+        classweight[0] = {0:1,1:(tempk+3)}
+    if classweight[1] == 1028:
+        classweight[1] = {0:1,1:(tempk+3)}
+
     # sust = 20
     for i in range(len(clfs)):
         if clfs[i] == "Knn":
@@ -419,7 +425,7 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
     ob1, ob2, ob3, ob4 = AHIcal(label, 1)
-    tempvar1, tempvar2, tempvar3, tempvar4 = AHIcal(temppre, 50)    #从60s片段之中获得apnea事件
+    tempvar1, tempvar2, tempvar3, tempvar4,temppre = smoothres(temppre, 50)    #从60s片段之中获得apnea事件
     res20 = np.zeros(len(label2))
     sec = np.zeros(len(label2), dtype=bool)
     for i in range(tempvar1):
@@ -852,15 +858,16 @@ def AHIcal(label, thre=50):
 
 def smoothres(label, thre=50):
     l = len(label)
+    output = label
     for i in range(4, l - 3):
         if label[i - 3] == 1 and label[i - 2] == 1 and label[i - 1] == 1 and label[i] == 0 \
                 and label[i + 1] == 1 and label[i + 2] == 1 and label[i + 3] == 1:
-            label[i] = 1
+            output[i] = 1
         if label[i - 3] == 0 and label[i - 2] == 0 and label[i - 1] == 0 and label[i] == 1 \
                 and label[i + 1] == 0 and label[i + 2] == 0 and label[i + 3] == 0:
-            label[i] = 0
-    var1, var2, var3, var4 = AHIcal(label, thre)
-    return var1, var2, var3, var4
+            output[i] = 0
+    var1, var2, var3, var4 = AHIcal(output, thre)
+    return var1, var2, var3, var4,output
 
 
 def OB(data, label, name, max_depth, min_samples_split, min_samples_leaf):
