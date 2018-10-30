@@ -85,7 +85,7 @@ def clfkfold(clf,data,label,N):
     count = 0
     for i in range(N):
         count = 0
-        eva = np.zeros((3, 2))
+        eva = np.zeros((3, 5))
         tempacu = []
         temprec = []
         temppr = []
@@ -99,7 +99,10 @@ def clfkfold(clf,data,label,N):
             temprec.append(recall_score(labeltest,temppre))
             temppr.append(precision_score(labeltest,temppre))
             tempres = AHItest(resclf,datatest,labeltest)
-            eva[count,:] = tempres[2]
+            eva[count,0] = len(tempres[1])
+            eva[count,1] = len(tempres[3])
+            eva[count,2] = tempres[4]
+            eva[count,3:] = tempres[2]
             count +=1
         tempacu = np.array(tempacu)
         temprec = np.array(temprec)
@@ -107,14 +110,25 @@ def clfkfold(clf,data,label,N):
         acuscore.append(tempacu)
         recascore.append(temprec)
         prescore.append(temppr)
-        eva[-1, 0] = eva[0:2, 0].mean()
-        eva[-1, 1] = eva[0:2, 1].mean()
+        eva[-1, 0] = eva[0:2, 0].sum()
+        eva[-1, 1] = eva[0:2, 1].sum()
+        eva[-1, 2] = eva[0:2, 2].sum()
+        eva[-1,3] = (eva[-1,2] - eva[-1,1])/(eva[-1,2]-eva[-1,1]+eva[-1,0])
+        eva[-1,4] = (eva[-1,2]-eva[-1,1])/eva[-1,2]
         res.append(eva)
 
     score = []
+    ob = np.zeros([N+1,5])
+
     for i in range(N):
         score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
-    return score,res
+        ob[i,:] = res[i][-1,:]
+    ob[-1,0] = ob[1:-1,0].sum()
+    ob[-1,1] = ob[1:-1,1].sum()
+    ob[-1,2] = ob[1:-1,2].sum()
+    ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
+    ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
+    return score,ob
 def clfcaskfold(data, label, data2, label2, N,WT1,WT2, classweight = ['balanced','balanced']):
     #级联分类器交叉训练函数
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
@@ -706,7 +720,7 @@ def AHItest(clfs, data, label):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
     eva.append(100 * (var1 - len(missres)) / var1)
-    return ind, wrongres, eva, missres
+    return ind, wrongres, eva, missres, var1
 
 
 def AHIres(clfs, data, label):
