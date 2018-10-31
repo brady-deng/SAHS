@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     # 单分类器训练与事件检测
     N = int(input('Please input the index of the subjects you want to train:'))
-    data,label = function.load_data('f10-23-1031.xlsx', N)
+    data,label = function.load_data('f60-23-1031.xlsx', N)
     # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # data = data[ind]
     # label = label[ind]
