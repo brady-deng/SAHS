@@ -123,9 +123,9 @@ def clfkfold(clf,data,label,N):
     for i in range(N):
         score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
         ob[i,:] = res[i][-1,:]
-    ob[-1,0] = ob[1:-1,0].sum()
-    ob[-1,1] = ob[1:-1,1].sum()
-    ob[-1,2] = ob[1:-1,2].sum()
+    ob[-1,0] = ob[0:-1,0].sum()
+    ob[-1,1] = ob[0:-1,1].sum()
+    ob[-1,2] = ob[0:-1,2].sum()
     ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
     ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
     return score,ob
