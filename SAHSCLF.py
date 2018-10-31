@@ -44,35 +44,35 @@ if __name__ == '__main__':
 #926
 #########################
     # 级联分类器K折交叉训练
-    # N = int(input('Please input the index of the subjects you want to train and test:'))
-    # WT1 = int(input('Please input the length of window1:'))
-    # WT2 = int(input('Please input the length of window2:'))
-    # classweight = input('Please input the classweight of the decision tree(** ** ** **):')
-    # classweight = [int(item) for item in classweight.split()]
-    # wei = []
-    # if classweight[0] == 0:
-    #     wei.append('balanced')
-    # elif classweight[0] == 1028:
-    #     wei.append(1028)
-    # else:
-    #     wei.append({0:classweight[0],1:classweight[1]})
-    # if classweight[2] == 0:
-    #     wei.append('balanced')
-    # elif classweight[2] == 1028:
-    #     wei.append(1028)
-    # else:
-    #     wei.append({0:classweight[2],1:classweight[3]})
-    # data,label = function.load_data('f60-23-ob2.xlsx', N)
-    # data2,label2 = function.load_data('f10-23-ob2.xlsx', N)
-    #
+    N = int(input('Please input the index of the subjects you want to train and test:'))
+    WT1 = int(input('Please input the length of window1:'))
+    WT2 = int(input('Please input the length of window2:'))
+    classweight = input('Please input the classweight of the decision tree(** ** ** **):')
+    classweight = [int(item) for item in classweight.split()]
+    wei = []
+    if classweight[0] == 0:
+        wei.append('balanced')
+    elif classweight[0] == 1028:
+        wei.append(1028)
+    else:
+        wei.append({0:classweight[0],1:classweight[1]})
+    if classweight[2] == 0:
+        wei.append('balanced')
+    elif classweight[2] == 1028:
+        wei.append(1028)
+    else:
+        wei.append({0:classweight[2],1:classweight[3]})
+    data,label = function.load_data('f60-23-ob2.xlsx', N)
+    data2,label2 = function.load_data('f10-23-ob2.xlsx', N)
+
     # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # data = data[ind]
     # label = label[ind]
     # data2 = data2[ind]
     # label2 = label2[ind]
-    # N = len(data)
-    # res,resave = function.clfcaskfold(data,label,data2,label2,N,WT1,WT2,classweight = wei)
-    # print(res)
+    N = len(data)
+    res,resave = function.clfcaskfold(data,label,data2,label2,N,WT1,WT2,classweight = wei)
+    print(res)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
@@ -82,16 +82,16 @@ if __name__ == '__main__':
 
 
     # 单分类器训练与事件检测
-    N = int(input('Please input the index of the subjects you want to train:'))
-    data,label = function.load_data('f10-23-ob.xlsx', N)
-    ind = np.array([ 0,1,2,7,9,11,13,14,21])
-    data = data[ind]
-    label = label[ind]
-    # data2 = data2[ind]
-    # label2 = label2[ind]
-    N = len(data)
-    res0 = function.clfkfold("Ran", data, label, N)
-    print(res0[0])
+    # N = int(input('Please input the index of the subjects you want to train:'))
+    # data,label = function.load_data('f10-23-ob.xlsx', N)
+    # ind = np.array([ 0,1,2,7,9,11,13,14,21])
+    # data = data[ind]
+    # label = label[ind]
+    # # data2 = data2[ind]
+    # # label2 = label2[ind]
+    # N = len(data)
+    # res0 = function.clfkfold("Ran", data, label, N)
+    # print(res0[0])
 
     # 单分类器事件检测
     # N = int(input('Please input the index of the subjects you want to train:'))
