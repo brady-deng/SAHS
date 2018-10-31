@@ -62,8 +62,13 @@ if __name__ == '__main__':
         wei.append(1028)
     else:
         wei.append({0:classweight[2],1:classweight[3]})
+<<<<<<< HEAD
     data,label = function.load_data('f60-23-ob2.xlsx', N)
     data2,label2 = function.load_data('f10-23-ob2.xlsx', N)
+=======
+    data,label = function.load_data('f60-22-ob.xlsx', N)
+    data2,label2 = function.load_data('f10-22-ob.xlsx', N)
+>>>>>>> 9b6632a3b599a1f285090063e6bf8b5946414ca0
 
     # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # data = data[ind]
@@ -83,7 +88,11 @@ if __name__ == '__main__':
 
     # 单分类器训练与事件检测
     # N = int(input('Please input the index of the subjects you want to train:'))
+<<<<<<< HEAD
     # data,label = function.load_data('f10-23-ob.xlsx', N)
+=======
+    # data,label = function.load_data('f10-23-1030.xlsx', N)
+>>>>>>> 9b6632a3b599a1f285090063e6bf8b5946414ca0
     # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # data = data[ind]
     # label = label[ind]
