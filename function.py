@@ -46,6 +46,151 @@ from mpl_toolkits.mplot3d import Axes3D
 # clfcaskfold，级联分类器K折交叉训练并且返回训练结果
 # clfkfold,单分类器交叉训练结果
 ###########################################
+def durmerge(label,time,timeroi,start,end,thre):
+    #label，待处理标签
+    #time，标签对应的时间索引
+    #timeroi，感兴趣区域的时间索引
+    #start，timeroi的序列索引
+    #end，timeroi的序列索引
+    #thre，merge的阈值
+    #返回的是处理之后的标签
+    dur = durdetect(start,end)
+    for i in range(len(dur)):
+        if dur[i] < thre:
+            label[time2ind(time,timeroi[start[i]]):time2ind(time,timeroi[end[i]])+1] = 0
+    return label
+def intmerge(label,time,timeroi,start,end,thre):
+    #label，待处理标签
+    #time，标签对应的时间索引
+    #timeroi，感兴趣区域的时间索引
+    #start，timeroi的序列索引
+    #end，timeroi的序列索引
+    #返回的是处理之后的标签
+    inter = intdetect(timeroi,start,end)
+    for i in range(len(inter)):
+        if inter[i]  < thre:
+            label[time2ind(time, timeroi[end[i]])+1:time2ind(time, timeroi[start[i+1]])] = 1
+    return label
+
+def intdetect(timeroi,start,end):
+    #timeroi，感兴趣区域时间序列
+    #start，timeroi的序列索引
+    #end，timeroi的序列索引
+    #返回的是阳性片段的间隔
+    inter = []
+    for i in range(len(start) - 1):
+        inter.append(timeroi[start[i+1]] - timeroi[end[i]] - 1)
+    inter = np.array(inter)
+    return inter
+def ind2time(time,ind):
+    #ind，序列索引
+    #time，时间序列
+    #返回的是时间索引
+    timeind = time[ind]
+    return  timeind
+def time2ind(time,timeind):
+    #time，时间序列
+    #timeind，时间索引
+    #返回的是序列索引
+
+    if type(timeind) == np.int64:
+        temp = np.where(time == timeind)
+        temp = temp[0][0]
+        ind = temp
+        indroi = ind
+    else:
+        ind = []
+        for item in timeind:
+            temp = np.where(time == item)
+            temp = temp[0][0]
+            ind.append(temp)
+        ind = np.array(ind)
+        indroi = ind
+
+    return indroi
+def roidetect(label,time):
+    #label，待检测标签
+    #time，标签对应的时间序列
+    #返回的是timeroi,temps,tempe
+    #timeroi，感兴趣区域的时间序列,np.array
+    #temps，感兴趣区域的开始点序列索引,list
+    #tempe，感兴趣区域的结束点序列索引,list
+    indpre = np.where(label == 1)
+    indpre = indpre[0]
+    timeroi = time[indpre]
+    tempdiff = np.diff(timeroi)
+    tempchange = np.where(tempdiff != 1)
+    tempchange = tempchange[0]
+    temps = [0]
+    tempe = []
+    if len(tempchange) != 0:
+        for i in range(len(tempchange)):
+            tempe.append(tempchange[i])
+            temps.append(tempchange[i] + 1)
+    tempe.append(len(timeroi)-1)
+    return timeroi,temps,tempe
+def durdetect(start,end):
+    #start，timeroi的序列索引
+    #end，timeroi的序列索引
+    #返回的是阳性片段的持续时长
+    dur = []
+    for i in range(len(start)):
+        dur.append(end[i]-start[i]+1)
+    dur = np.array(dur)
+    return dur
+def prefilter(label,time,labelpre,thredur,threint):
+    ################################
+    #label，原始数据标签
+    #time，原始数据时间索引
+    #labelpre，分类器预测标签
+    #thre，事件检测阈值
+    #返回的是labelpre
+    #labelpre，处理之后的标签数据
+    timeroi,temps,tempe = roidetect(labelpre,time)
+    labelpre = intmerge(labelpre, time, timeroi, temps, tempe,threint)
+    timeroi, temps, tempe = roidetect(labelpre, time)
+    labelpre = durmerge(labelpre,time,timeroi,temps,tempe,thredur)
+    return labelpre
+def mapwindow(WT1,WT2,ind1,ind2):
+    #############################
+    #WT1,窗口1的宽度
+    #WT2，窗口2的宽度
+    #ind1，timeroi，感兴趣区域的时间索引
+    #ind2，级联分类器2训练数据的时间索引
+    #############################
+    tempob = np.diff(ind1)
+    tempchange = np.where(tempob!=1)
+    temps = [0]
+    tempe = []
+    # tempe = [len(tempob)]
+    if len(tempchange[0]) != 0:
+        for i in range(len(tempchange[0])):
+            tempe.append(tempchange[0][i])
+            temps.append(tempchange[0][i]+1)
+    tempe.append(len(tempob))
+    tempe = np.array(tempe)
+    temps = np.array(temps)
+    mape = ind1[tempe]+WT1-WT2
+    maps = ind1[temps]
+    temps = time2ind(ind2,maps)
+    tempe = time2ind(ind2,mape)
+    # temps = []
+    # tempe = []
+    # for i in range(len(mape)):
+    #     tempvar = np.where(ind2 == mape[i])
+    #     tempe.append(tempvar[0][0])
+    #     tempvar = np.where(ind2 == maps[i])
+    #     temps.append(tempvar[0][0])
+    indtest = []
+    for i in range(len(temps)):
+        indtest.append([k for k in range(temps[i],tempe[i]+1)])
+    temptest = []
+    for item in indtest:
+        temptest.append(np.array(item))
+    indtest = temptest[0]
+    for i in range(1,len(temptest)):
+        indtest = np.hstack([indtest,temptest[i]])
+    return indtest
 def clfkfold(clf,data,label,N):
     ######################################
     #单分类器交叉验证
@@ -129,8 +274,18 @@ def clfkfold(clf,data,label,N):
     ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
     ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
     return score,ob
-def clfcaskfold(data, label, data2, label2, N,WT1,WT2, classweight = ['balanced','balanced']):
+def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweight = ['balanced','balanced']):
     #级联分类器交叉训练函数
+    #data窗口1对应的数据，list类型
+    #label窗口1对应的标签，list类型
+    #data2窗口2对应的数据，list类型
+    #label2窗口2对应的标签，list类型
+    #timeind1，窗口1对应的时间序列
+    #timeind2，窗口2对应的时间序列
+    #N，被试数目
+    #WT1，窗口1的长度
+    #WT2，窗口2的长度
+    #返回的是res，resave
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
@@ -138,13 +293,13 @@ def clfcaskfold(data, label, data2, label2, N,WT1,WT2, classweight = ['balanced'
     resave = np.zeros([N+1, 22])
     for i in range(N):
         resi = []
-        datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2 = casdata(
-            data[i], label[i], data2[i], label2[i], WT1, WT2, P)  #切割获得训练集、测试集
+        datatrain1, labeltrain1, datatest1, labeltest1, timetest1,datatrain2, labeltrain2, datatest2, labeltest2,timetest2 = casdata(
+            data[i], label[i], data2[i], label2[i], timeind1[i],timeind2[i],WT1, WT2, P)  #切割获得训练集、测试集
         resmat = np.zeros([int(1 / P) + 1, 22])
         for k in range(int(1 / P)):
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
-            tempres = clfcastest(clfs, datatest1[k], labeltest1[k], datatest2[k], labeltest2[k], 0, 0)
+            tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
             resi.append(tempres)
             resmat[k,0:18] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
                          tempres[1][2], tempres[-1][0], tempres[-1][1], tempres[-1][2],tempres[2][0], tempres[2][1],
@@ -188,7 +343,7 @@ def clfcaskfold(data, label, data2, label2, N,WT1,WT2, classweight = ['balanced'
     return res, resave
 
 
-def casdata(data1, label1, data2, label2, WT1, WT2, P):
+def casdata(data1, label1, data2, label2, timeind1,timeind2,WT1, WT2, P):
     #级联分类器的数据切割获得（1/P）折训练数据集、测试数据集
     l1 = len(label1)
     l2 = len(label2)
@@ -202,22 +357,29 @@ def casdata(data1, label1, data2, label2, WT1, WT2, P):
     labeltrain2 = []
     labeltest1 = []
     labeltest2 = []
+    timetest1 = []
+    timetest2 = []
     for i in range(k):
         ind = np.zeros(l1, dtype=bool)
         ind[i * lte:(i + 1) * lte] = True
         datatest1.append(data1[ind])
         labeltest1.append(label1[ind])
+        timetest1.append(timeind1[ind])
+        indtest2 = mapwindow(WT1,WT2,timetest1[i],timeind2)
+        ind2 = np.zeros(len(data2), dtype=bool)
+        ind2[indtest2] = True
+        datatest2.append(data2[ind2])
+        labeltest2.append(label2[ind2])
+        timetest2.append(timeind2[ind2])
         ind = ~ind
+        ind2 = ~ind2
         datatrain1.append(data1[ind])
         labeltrain1.append(label1[ind])
-        ind = np.zeros(l2, dtype=bool)
-        ind[i * lte:((i + 1) * lte + WT1 - WT2)] = True
-        datatest2.append(data2[ind])
-        labeltest2.append(label2[ind])
-        ind = ~ind
-        datatrain2.append(data2[ind])
-        labeltrain2.append(label2[ind])
-    return datatrain1, labeltrain1, datatest1, labeltest1, datatrain2, labeltrain2, datatest2, labeltest2
+        # timetrain1.append(timeind1[ind])
+        datatrain2.append(data2[ind2])
+        labeltrain2.append(label2[ind2])
+        # timetrain2.append(timeind2[ind2])
+    return datatrain1, labeltrain1, datatest1, labeltest1, timetest1,datatrain2, labeltrain2, datatest2, labeltest2,timetest2
 
 
 def dataseg(data1, label1, data2, label2, WT1, WT2, P):
@@ -322,77 +484,92 @@ def clfcastrain(clfs, data, label, data2, label2, sust, Y, ind=[], classweight=[
     if Y:
         drawtree(tempclf[0], 'tree1')
         drawtree(tempclf[1], 'tree2')
-
-    datawait = data2[sec]
-    labelwait = label2[sec]
-    var1, var2, var3, var4 = AHIcal(label2, 1)
-    if len(datawait) != 0:
-        # tempclf[1].fit(datawait, labelwait)
-        temppre = tempclf[1].predict(datawait)
-        ind2 = []
-        ind2.append(accuracy_score(labelwait, temppre))
-        ind2.append(recall_score(labelwait, temppre))
-        ind2.append(precision_score(labelwait, temppre))
-
-        var5, var6, var7, var8 = AHIcal(temppre, 10)
-        var7 = map[0][var7]
-        var8 = map[0][var8]
-        res = []
-        flag = [0] * var5
-        wrongres = []
-        eva = []
-        for i in range(var5):
-            # tempflag = []
-            for k in range(var1):
-                if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
-                        var7[i] <= var3[k] and var8[i] >= var4[k]):
-                    res.append([i, k])
-                    flag[i] = 1
-            # res.append(tempflag)
-            if flag[i] == 0:
-                wrongres.append([var7[i], var8[i]])
-        ########################
-        # eva[0]是精准率
-        if len(flag) == 0:
-            eva.append(0)
-        else:
-            eva.append(100 * sum(flag) / len(flag))
-        flag2 = [0] * var1
-        missres = []
-        for item in res:
-            flag2[item[1]] = 1
-        for i in range(var1):
-            if flag2[i] == 0:
-                missres.append([var3[i], var4[i]])
-        ########################
-        # eva[0]是召回率
-        if var1 != 0:
-            eva.append(100 * (var1 - len(missres)) / var1)
-        else:
-            eva.append(100 * (var1 - len(missres)))
-        # wrongloc = []
-        # for item in wrongres:
-        #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
-        # missloc = []
-        # for item in missres:
-        #     missloc.append([map[0][item[0]],map[0][item[1]]])
-    else:
-        ind2 = [0, 0, 0]
-        if var1 != 0:
-            eva = [0, 0]
-            wrongres = []
-            missres = []
-            for k in range(var1):
-                missres.append([var3[k], var4[k]])
-
-        else:
-            eva = [100, 100]
-            wrongres = []
-            missres = []
+    temppre = tempclf[1].predict(data2)
+    ind2 = []
+    ind2.append(accuracy_score(label2, temppre))
+    ind2.append(recall_score(label2, temppre))
+    ind2.append(precision_score(label2, temppre))
+    # datawait = data2[sec]
+    # labelwait = label2[sec]
+    # var1, var2, var3, var4 = AHIcal(label2, 1)
+    # if len(datawait) != 0:
+    #     # tempclf[1].fit(datawait, labelwait)
+    #     temppre = tempclf[1].predict(datawait)
+    #     ind2 = []
+    #     ind2.append(accuracy_score(labelwait, temppre))
+    #     ind2.append(recall_score(labelwait, temppre))
+    #     ind2.append(precision_score(labelwait, temppre))
+    #
+    #     var5, var6, var7, var8 = AHIcal(temppre, 10)
+    #     var7 = map[0][var7]
+    #     var8 = map[0][var8]
+    #     res = []
+    #     flag = [0] * var5
+    #     wrongres = []
+    #     eva = []
+    #     for i in range(var5):
+    #         # tempflag = []
+    #         for k in range(var1):
+    #             if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
+    #                     var7[i] <= var3[k] and var8[i] >= var4[k]):
+    #                 res.append([i, k])
+    #                 flag[i] = 1
+    #         # res.append(tempflag)
+    #         if flag[i] == 0:
+    #             wrongres.append([var7[i], var8[i]])
+    #     ########################
+    #     # eva[0]是精准率
+    #     if len(flag) == 0:
+    #         eva.append(0)
+    #     else:
+    #         eva.append(100 * sum(flag) / len(flag))
+    #     flag2 = [0] * var1
+    #     missres = []
+    #     for item in res:
+    #         flag2[item[1]] = 1
+    #     for i in range(var1):
+    #         if flag2[i] == 0:
+    #             missres.append([var3[i], var4[i]])
+    #     ########################
+    #     # eva[0]是召回率
+    #     if var1 != 0:
+    #         eva.append(100 * (var1 - len(missres)) / var1)
+    #     else:
+    #         eva.append(100 * (var1 - len(missres)))
+    #     # wrongloc = []
+    #     # for item in wrongres:
+    #     #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
+    #     # missloc = []
+    #     # for item in missres:
+    #     #     missloc.append([map[0][item[0]],map[0][item[1]]])
+    # else:
+    #     ind2 = [0, 0, 0]
+    #     if var1 != 0:
+    #         eva = [0, 0]
+    #         wrongres = []
+    #         missres = []
+    #         for k in range(var1):
+    #             missres.append([var3[k], var4[k]])
+    #
+    #     else:
+    #         eva = [100, 100]
+    #         wrongres = []
+    #         missres = []
 
     return tempclf, sum(label2), len(label2) - sum(label2)
 
-def eventdetect(var1,var2,var3,var4,var5,var6,var7,var8):
+def eventdetect(var1,var3,var4,var5,var7,var8):
+    #var1，标签事件总数
+    #var3，标签事件起点，时间索引
+    #var4，标签事件终点，时间索引
+    #var5，预测数据总数
+    #var7，预测事件起点，时间索引
+    #var8，预测事件终点，时间索引
+    #返回的是wrongres,missres,eva,res
+    #wrongres，错误的预测事件
+    #missres，遗漏的预测事件
+    #eva，事件的评价指标
+    #res，正确的事件
     res = []
     flag = [0] * var5
     wrongres = []
@@ -423,7 +600,7 @@ def eventdetect(var1,var2,var3,var4,var5,var6,var7,var8):
     else:
         eva.append(100 * (var1 - len(missres)))
     return wrongres,missres,eva,res
-def clfcastest(clfs, data, label, data2, label2, sust, Y):
+def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,WT2):
     #############################
     #clfs，级联分类器，list类型
     #data，60s测试数据
@@ -432,28 +609,34 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
     #Y，是否画出决策树标志
     #############################
     tempclf = clfs  #集成刚才训练好的分类器
-    count = 1
     temppre = tempclf[0].predict(data)  #60s预测输出
+    #event detect and smooth
+    temppre = prefilter(label,timeind1,temppre,WT1,5)
+    timeroi, temps, tempe = roidetect(temppre, timeind1)
+    indtest = mapwindow(WT1, WT2,  timeroi, timeind2)
+    #在级联分类器1的预测结果基础上寻找级联分类器2的输入
     ind1 = []   #ind1，60s数据测试性能
     ind1.append(accuracy_score(label, temppre))
     ind1.append(recall_score(label, temppre))
     ind1.append(precision_score(label, temppre))
-    ob1, ob2, ob3, ob4 = AHIcal(label, 1)
-    tempvar1, tempvar2, tempvar3, tempvar4,temppre = smoothres(temppre, 50)    #从60s片段之中获得apnea事件
     res20 = np.zeros(len(label2))
     sec = np.zeros(len(label2), dtype=bool)
-    for i in range(tempvar1):
-        sec[(tempvar3[i] - sust):(tempvar4[i] + 60 - 20 + sust)] = True     #筛出60s窗口中的阳性窗口
-    map = np.where(sec == True)     #获得data2中的阳性窗口的索引
+    sec[indtest] = True
+    # map = np.where(sec == True)     #获得data2中的阳性窗口的索引
     if Y:
         drawtree(tempclf[1], 'tree')
     datawait = data2[sec]   #从60s阳性窗口中继承20s阳性窗口
     labelwait = label2[sec]   #从60s阳性窗口中继承20s阳性窗口
-    var1, var2, var3, var4 = AHIcal(label2, 1)  #计算人工标注中的ah事件
-
+    timewait = timeind2[sec]
+    var2,var3,var4 = roidetect(label2,timeind2)
+    var3 = ind2time(var2,var3)
+    var4 = ind2time(var2,var4)
+    var1 = len(var3)
     if len(datawait) != 0:
         temppre = tempclf[1].predict(datawait)
         tempob = tempclf[1].predict(data2)
+        tempob = prefilter(label2, timeind2, tempob, WT2, 5)
+        temppre = prefilter(labelwait,timewait,temppre,WT2,5)
         sec = ~sec
         tempob[sec] = 0
         ind2 = []
@@ -464,57 +647,23 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
         ind3.append(accuracy_score(label2, tempob))
         ind3.append(recall_score(label2, tempob))
         ind3.append(precision_score(label2, tempob))
-        var5,var6,var7,var8 = AHIcal(tempob,10)
-        # var5, var6, var7, var8 = AHIcal(temppre, 10)
-        # var7 = map[0][var7] #将预测出的事件起始点映射到data2的索引当中
-        # var8 = map[0][var8]
+        var6,var7,var8 = roidetect(temppre,timewait)
+        var5 = len(var7)
+        var7 = ind2time(var6,var7)
+        var8 = ind2time(var6,var8)
+        var7 = time2ind(timeind2,var7)
+        var8 = time2ind(timeind2,var8)
         for i in range(len(var7)):
-            res20[var7[i]:var8[i]] = 1
+            res20[var7[i]:var8[i]+1] = 1
         segscore = []
         segscore.append(accuracy_score(label2,res20))
         segscore.append(recall_score(label2, res20))
         segscore.append(precision_score(label2, res20))
-        # res = []
-        # flag = [0] * var5
-        # wrongres = []
-        # eva = []
-        # for i in range(var5):
-        #     # tempflag = []
-        #     for k in range(var1):
-        #         if (var7[i] >= var3[k] and var7[i] < var4[k]) or (var8[i] > var3[k] and var8[i] <= var4[k]) or (
-        #                 var7[i] <= var3[k] and var8[i] >= var4[k]):
-        #             res.append([i, k])
-        #             flag[i] = 1
-        #     # res.append(tempflag)
-        #     if flag[i] == 0:
-        #         wrongres.append([var7[i], var8[i]])
-        # if var5 != 0:
-        #     eva.append(100 * sum(flag) / len(flag))
-        # else:
-        #     eva.append(0)
-        # flag2 = [0] * var1
-        # missres = []
-        # for item in res:
-        #     flag2[item[1]] = 1
-        # for i in range(var1):
-        #     if flag2[i] == 0:
-        #         missres.append([var3[i], var4[i]])
-        # if var1 != 0:
-        #     eva.append(100 * (var1 - len(missres)) / var1)
-        # else:
-        #     eva.append(100 * (var1 - len(missres)))
-        wrongres,missres,eva,res = eventdetect(var1,var2,var3,var4,var5,var6,var7,var8)
-        # resob1,resob2,resob3,resob4 = eventdetect(var1,var2,var3,var4,ob5,ob6,ob7,ob8)
+        var7 = ind2time(timeind2,var7)
+        var8 = ind2time(timeind2,var8)
+        #var3，var4，var7，var8都应该是时间索引
+        wrongres,missres,eva,res = eventdetect(var1,var3,var4,var5,var7,var8)
 
-
-
-
-        # wrongloc = []
-        # for item in wrongres:
-        #     wrongloc.append([map[0][item[0]],map[0][item[1]]])
-        # missloc = []
-        # for item in missres:
-        #     missloc.append([map[0][item[0]],map[0][item[1]]])
     else:
         ind2 = [0, 0, 0]
         segscore = []
@@ -528,15 +677,27 @@ def clfcastest(clfs, data, label, data2, label2, sust, Y):
             missres = []
             for k in range(var1):
                 missres.append([var3[k], var4[k]])
-
         else:
-
             eva = [100, 100]
             wrongres = []
             missres = []
     #返回的是60s窗口的测试结果、20s窗口的测试结果、事件的测试结果、错误的事件、错失的事件、测试集的阳性样本数、测试集的阴性样本数
     #错误事件的个数、错失事件的个数、人工标注数据的事件个数、级联分类器的分类结果。
     return ind1, ind2, eva, wrongres, missres, sum(label2), len(label2) - sum(label2), len(wrongres), len(missres), var1,segscore
+    # # plabel,slabel,elabel,dlabel = durdetect(label,timeind1)
+    # # # ob1, ob2, ob3, ob4 = AHIcal(label, 1)
+    # # # tempvar1, tempvar2, tempvar3, tempvar4,temppre = smoothres(temppre, 50)    #从60s片段之中获得apnea事件
+    # # clfind1 = np.where(temppre == 1)
+    # # clfind1 = clfind1[0]
+    # # timepre = timeind1[clfind1]
+    # # indtest = mapwindow(WT1,WT2,timepre,timeind2)
+    #
+    # # for i in range(tempvar1):
+    # #     sec[indtest] = True     #筛出60s窗口中的阳性窗口
+    #
+    # var1, var2, var3, var4 = AHIcal(label2, 1)  #计算人工标注中的ah事件
+    # plabel, slabel, elabel, dlabel = durdetect(label2, timeind2)
+
 
 
 def clfcas(clfs, data, label, data2, label2, sust, Y):
@@ -870,7 +1031,7 @@ def AHIcal(label, thre=50):
     return aha, cachelen, cachestart, cacheend
 
 
-def smoothres(label, thre=50):
+def smoothres(label):
     l = len(label)
     output = label
     for i in range(4, l - 3):
@@ -880,8 +1041,8 @@ def smoothres(label, thre=50):
         if label[i - 3] == 0 and label[i - 2] == 0 and label[i - 1] == 0 and label[i] == 1 \
                 and label[i + 1] == 0 and label[i + 2] == 0 and label[i + 3] == 0:
             output[i] = 0
-    var1, var2, var3, var4 = AHIcal(output, thre)
-    return var1, var2, var3, var4,output
+    # var1, var2, var3, var4 = AHIcal(output, thre)
+    return output
 
 
 def OB(data, label, name, max_depth, min_samples_split, min_samples_leaf):
@@ -934,19 +1095,24 @@ def load_data(filename, N):
     data = pd.read_excel(filename, sheet_name=None)
     data_train = []
     label = []
+    timeind = []
     if N == 0:
         N = 23
         for i in range(N):
-            label.append(data[str(i + 1)].iloc[:, -1].values)
-            data_train.append(data[str(i + 1)].iloc[:, 0:-1].values)
+            label.append(data[str(i + 1)].iloc[:, -2].values)
+            data_train.append(data[str(i + 1)].iloc[:, 0:-2].values)
+            timeind.append(data[str(i + 1)].iloc[:, -1].values)
         data_train = np.array(data_train)
         label = np.array(label)
+        timeind = np.array(timeind)
     else:
-        label.append(data[str(N)].iloc[:, -1].values)
-        data_train.append(data[str(N)].iloc[:, 0:-1].values)
+        label.append(data[str(N)].iloc[:, -2].values)
+        data_train.append(data[str(N)].iloc[:, 0:-2].values)
+        timeind.append(data[str(N)].iloc[:, -1].values)
         data_train = np.array(data_train)
         label = np.array(label)
-    return data_train, label
+        timeind = np.array(timeind)
+    return data_train, label, timeind
 
 
 ########################
