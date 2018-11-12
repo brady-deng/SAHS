@@ -62,13 +62,21 @@ if __name__ == '__main__':
         wei.append(1028)
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label,timeind = function.load_data('f60-23-1107.xlsx', N)
-    data2,label2,timeind2 = function.load_data('f10-23-1107.xlsx', N)
+    data,label,timeind = function.load_data('f60-23-1112.xlsx', N)
+    data2,label2,timeind2 = function.load_data('f10-23-1112.xlsx', N)
 
-
-    # data, label = function.createdataset(data, label, 0.5, N, 2)
+    N = len(data)
+    data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
-    ind = np.array([ 0,1,2,7,9,11,13,14,21])
+    # indall = [i for i in range(23)]
+    # indall = set(indall)
+    # indfew = [12]
+    # # indfew = []
+    # indfew = set(indfew)
+    # indroi = indall - indfew
+    # indroi = list(indroi)
+    indroi = [0,1,2,7,9,11,13,14,21]
+    ind = np.array(indroi)
     data = data[ind]
     label = label[ind]
     timeind = timeind[ind]

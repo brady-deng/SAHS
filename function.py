@@ -86,7 +86,10 @@ def ind2time(time,ind):
     #ind，序列索引
     #time，时间序列
     #返回的是时间索引
-    timeind = time[ind]
+    if len(time)!=0:
+        timeind = time[ind]
+    else:
+        timeind = []
     return  timeind
 def time2ind(time,timeind):
     #time，时间序列
@@ -117,17 +120,22 @@ def roidetect(label,time):
     #tempe，感兴趣区域的结束点序列索引,list
     indpre = np.where(label == 1)
     indpre = indpre[0]
-    timeroi = time[indpre]
-    tempdiff = np.diff(timeroi)
-    tempchange = np.where(tempdiff != 1)
-    tempchange = tempchange[0]
-    temps = [0]
-    tempe = []
-    if len(tempchange) != 0:
-        for i in range(len(tempchange)):
-            tempe.append(tempchange[i])
-            temps.append(tempchange[i] + 1)
-    tempe.append(len(timeroi)-1)
+    if len(indpre) != 0:
+        timeroi = time[indpre]
+        tempdiff = np.diff(timeroi)
+        tempchange = np.where(tempdiff != 1)
+        tempchange = tempchange[0]
+        temps = [0]
+        tempe = []
+        if len(tempchange) != 0:
+            for i in range(len(tempchange)):
+                tempe.append(tempchange[i])
+                temps.append(tempchange[i] + 1)
+        tempe.append(len(timeroi)-1)
+    else:
+        timeroi = []
+        temps = []
+        tempe = []
     return timeroi,temps,tempe
 def durdetect(start,end):
     #start，timeroi的序列索引
@@ -628,6 +636,7 @@ def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,W
     datawait = data2[sec]   #从60s阳性窗口中继承20s阳性窗口
     labelwait = label2[sec]   #从60s阳性窗口中继承20s阳性窗口
     timewait = timeind2[sec]
+    label2 = prefilter(label2,timeind2,label2,WT2,5)
     var2,var3,var4 = roidetect(label2,timeind2)
     var3 = ind2time(var2,var3)
     var4 = ind2time(var2,var4)
@@ -1379,11 +1388,12 @@ def createahiset(data, label, P, N):
     return datares, labelres
 
 
-def createdataset(data, label, P, N, N_seg):
+def createdataset(data, label, timeind, P, N, N_seg):
     #######################
     # 输入项：
     # data训练数据
     # label标签
+    # timeind时间信息
     # P训练集合比例
     # N待分类的被试数目
     # 数据切割段数
@@ -1395,6 +1405,7 @@ def createdataset(data, label, P, N, N_seg):
     ##########################
     dataset = []
     labelset = []
+    timeset = []
     for i in range(N):
         templ = len(data[i])
         l_seg = int(templ / N_seg)
@@ -1402,26 +1413,33 @@ def createdataset(data, label, P, N, N_seg):
         l_segtr = l_seg - l_segte
         tempdata = []
         templabel = []
+        temptime = []
         dataset.append([])
         labelset.append([])
+        timeset.append([])
 
         for k in range(N_seg):
             tempdata.append(data[i][k * l_seg + 1:(k + 1) * l_seg])
             templabel.append(label[i][k * l_seg + 1:(k + 1) * l_seg])
+            temptime.append(timeind[i][k * l_seg + 1:(k+1) * l_seg])
         for count2 in range(int(1 / P)):
             for k in range(N_seg):
                 temptrain = tempdata[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
                 templatr = templabel[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
+                temptind = temptime[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
                 if count2 == 0 and k == 0:
                     dataset[i] = temptrain
                     labelset[i] = templatr
+                    timeset[i] = temptind
                 else:
                     dataset[i] = np.vstack((dataset[i], temptrain))
                     labelset[i] = np.hstack((labelset[i], templatr))
-                del temptrain, templatr
+                    timeset[i] = np.hstack((timeset[i], temptind))
+                del temptrain, templatr, temptind
     dataset = np.array(dataset)
     labelset = np.array(labelset)
-    return dataset, labelset
+    timeset = np.array(timeset)
+    return dataset, labelset, timeset
 
 
 def train_912(data, label, P, N, N_seg):
