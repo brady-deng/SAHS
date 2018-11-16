@@ -8,6 +8,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.model_selection import cross_val_score, cross_validate, GridSearchCV, KFold
 from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.externals import joblib
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -46,6 +47,83 @@ from mpl_toolkits.mplot3d import Axes3D
 # clfcaskfold，级联分类器K折交叉训练并且返回训练结果
 # clfkfold,单分类器交叉训练结果
 ###########################################
+def clfloadtest(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2,Y=0):
+    #级联分类器交叉训练函数
+    #data窗口1对应的数据，list类型
+    #label窗口1对应的标签，list类型
+    #data2窗口2对应的数据，list类型
+    #label2窗口2对应的标签，list类型
+    #timeind1，窗口1对应的时间序列
+    #timeind2，窗口2对应的时间序列
+    #N，被试数目
+    #WT1，窗口1的长度
+    #WT2，窗口2的长度
+    #返回的是res，resave
+    P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
+    # ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
+    # ind = [int(item) for item in ind]
+    res = []
+    resave = np.zeros([N+1, 22])
+    clfs = []
+    clfs.append(joblib.load('60.joblib'))
+    clfs.append(joblib.load('10.joblib'))
+    for i in range(N):
+        resi = []
+        datatrain1, labeltrain1, datatest1, labeltest1, timetest1,datatrain2, labeltrain2, datatest2, labeltest2,timetest2 = casdata(
+            data[i], label[i], data2[i], label2[i], timeind1[i],timeind2[i],WT1, WT2, P)  #切割获得训练集、测试集
+        resmat = np.zeros([int(1 / P) + 1, 22])
+
+        for k in range(int(1 / P)):
+            # clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
+            #                                0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
+            num2 = labeltrain1[k].sum()
+            num1 = len(labeltrain1[k])
+            tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
+            if Y:
+                joblib.dump(clfs[0],'60.joblib')
+                joblib.dump(clfs[1],'10.joblib')
+
+            resi.append(tempres)
+            resmat[k,0:18] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
+                         tempres[1][2], tempres[-1][0], tempres[-1][1], tempres[-1][2],tempres[2][0], tempres[2][1],
+                         tempres[-4], tempres[-3], tempres[-2],tempres[5],tempres[6]]
+            resmat[k,18] = resmat[k,8]*(resmat[k,16]+resmat[k,17])
+            resmat[k,19] = resmat[k,9]*resmat[k,16]
+        #结果统计矩阵，0训练集阳性样本书、1阴性样本数，2-460s测试结果、5-720s测试结果、8-10级联分类器片段测试结果、11-12事件测试结果，13预测错误的事件，
+        #14错失的事件、15人工标注数据中的总的时间、16测试集中的阳性片段数、17测试集中的阴性片段数、18预测正确的片段数、19预测正确的阳性片段数。
+        #20人工标注的AHI，21模型计算的AHI
+        resmat[-1, :] = sum(resmat[0:-1,:]) / int(1 / P)
+        resmat[-1,18] = sum(resmat[0:-1,18])
+        resmat[-1,19] = sum(resmat[0:-1,19])
+        resmat[-1,16] = sum(resmat[0:-1,16])
+        resmat[-1,17] = sum(resmat[0:-1,17])
+        resmat[-1, 8] = resmat[-1,18]/(resmat[-1,16]+resmat[-1,17])
+        resmat[-1, 9] = resmat[-1,19]/resmat[-1,16]
+        resmat[-1, 13:16] = sum(resmat[0:-1, 13:16])
+        resmat[-1, 11] = 1 - (resmat[-1, 13] / (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]))
+        # resmat[-1, 8] = 1 - (resmat[-1, 10] / (resmat[-1, 12] - resmat[-1, 11]))
+        resmat[-1, 12] = 1 - resmat[-1, 14] / resmat[-1, 15]
+        resmat[-1, 20] = resmat[-1, 15] / ((resmat[-1, 16] + resmat[-1, 17] + WT2) / 3600)
+        resmat[-1, 21] = (resmat[-1, 15] - resmat[-1, 14] + resmat[-1, 13]) / (
+                    (resmat[-1, 16] + resmat[-1, 17] + WT2) / 3600)
+        res.append(resmat)
+        resave[i] = resmat[-1]
+    resave[-1, :] = sum(resave[0:-1,:]) / N
+    resave[-1, 18] = sum(resave[0:-1, 18])
+    resave[-1, 19] = sum(resave[0:-1, 19])
+    resave[-1, 16] = sum(resave[0:-1, 16])
+    resave[-1, 17] = sum(resave[0:-1, 17])
+    resave[-1, 8] = resave[-1, 18] / (resave[-1, 16] + resave[-1, 17])
+    resave[-1, 9] = resave[-1, 19] / resave[-1, 16]
+    resave[-1, 13:16] = sum(resave[0:-1, 13:16])
+    resave[-1, 11] = 1 - (resave[-1, 13] / (resave[-1, 15] - resave[-1, 14] + resave[-1, 13]))
+    # resave[-1, 8] = 1 - (resave[-1, 10] / (resave[-1, 12] - resave[-1, 11]))
+    resave[-1, 12] = 1 - resave[-1, 14] / resave[-1, 15]
+    resave[-1,20] = resave[-1,15]/((resave[-1,16]+resave[-1,17]+WT2)/3600)
+    resave[-1,21] = (resave[-1,15]-resave[-1,14]+resave[-1,13])/((resave[-1,16]+resave[-1,17]+WT2)/3600)
+
+
+    return res, resave
 def durmerge(label,time,timeroi,start,end,thre):
     #label，待处理标签
     #time，标签对应的时间索引
@@ -282,7 +360,7 @@ def clfkfold(clf,data,label,N):
     ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
     ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
     return score,ob
-def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweight = ['balanced','balanced']):
+def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweight = ['balanced','balanced'],Y=0):
     #级联分类器交叉训练函数
     #data窗口1对应的数据，list类型
     #label窗口1对应的标签，list类型
@@ -308,6 +386,10 @@ def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classwe
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
+            if Y:
+                joblib.dump(clfs[0],'60.joblib')
+                joblib.dump(clfs[1],'10.joblib')
+
             resi.append(tempres)
             resmat[k,0:18] = [num2, num1, tempres[0][0], tempres[0][1], tempres[0][2], tempres[1][0], tempres[1][1],
                          tempres[1][2], tempres[-1][0], tempres[-1][1], tempres[-1][2],tempres[2][0], tempres[2][1],
@@ -1419,23 +1501,40 @@ def createdataset(data, label, timeind, P, N, N_seg):
         timeset.append([])
 
         for k in range(N_seg):
-            tempdata.append(data[i][k * l_seg + 1:(k + 1) * l_seg])
-            templabel.append(label[i][k * l_seg + 1:(k + 1) * l_seg])
-            temptime.append(timeind[i][k * l_seg + 1:(k+1) * l_seg])
+            if k < N_seg-1:
+                tempdata.append(data[i][k * l_seg:(k + 1) * l_seg])
+                templabel.append(label[i][k * l_seg:(k + 1) * l_seg])
+                temptime.append(timeind[i][k * l_seg:(k+1) * l_seg])
+            else:
+                tempdata.append(data[i][k * l_seg:])
+                templabel.append(label[i][k * l_seg:])
+                temptime.append(timeind[i][k * l_seg:])
         for count2 in range(int(1 / P)):
-            for k in range(N_seg):
-                temptrain = tempdata[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
-                templatr = templabel[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
-                temptind = temptime[k][count2 * l_segte + 1:(count2 + 1) * l_segte]
-                if count2 == 0 and k == 0:
-                    dataset[i] = temptrain
-                    labelset[i] = templatr
-                    timeset[i] = temptind
-                else:
+            if count2 < int(1 / P)-1:
+                for k in range(N_seg):
+                    temptrain = tempdata[k][count2 * l_segte:(count2 + 1) * l_segte]
+                    templatr = templabel[k][count2 * l_segte:(count2 + 1) * l_segte]
+                    temptind = temptime[k][count2 * l_segte:(count2 + 1) * l_segte]
+                    if count2 == 0 and k == 0:
+                        dataset[i] = temptrain
+                        labelset[i] = templatr
+                        timeset[i] = temptind
+                    else:
+                        dataset[i] = np.vstack((dataset[i], temptrain))
+                        labelset[i] = np.hstack((labelset[i], templatr))
+                        timeset[i] = np.hstack((timeset[i], temptind))
+                    del temptrain, templatr, temptind
+            else:
+                for k in range(N_seg):
+                    temptrain = tempdata[k][count2 * l_segte:]
+                    templatr = templabel[k][count2 * l_segte:]
+                    temptind = temptime[k][count2 * l_segte:]
+
                     dataset[i] = np.vstack((dataset[i], temptrain))
                     labelset[i] = np.hstack((labelset[i], templatr))
                     timeset[i] = np.hstack((timeset[i], temptind))
-                del temptrain, templatr, temptind
+                    del temptrain, templatr, temptind
+
     dataset = np.array(dataset)
     labelset = np.array(labelset)
     timeset = np.array(timeset)
