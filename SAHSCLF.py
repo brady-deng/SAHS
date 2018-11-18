@@ -70,6 +70,7 @@ if __name__ == '__main__':
     # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
     indall = [i for i in range(23)]
     indall = set(indall)
+    # indfew = [4,5,6,8,10,12,14,15,16]
     indfew = [12]
     # indfew = []
     indfew = set(indfew)
@@ -84,7 +85,8 @@ if __name__ == '__main__':
     label2 = label2[ind]
     timeind2 = timeind2[ind]
     N = len(data)
-    res,resave = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 1)
+    # res,resave = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 1)
+    res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
     # res, resave = function.clfloadtest(data, label, data2, label2, timeind, timeind2, N, WT1, WT2,)
     print(res)
 
@@ -97,13 +99,20 @@ if __name__ == '__main__':
 
     # 单分类器训练与事件检测
     # N = int(input('Please input the index of the subjects you want to train:'))
-    # data,label = function.load_data('f60-23-1031.xlsx', N)
+    # data,label,timeind = function.load_data('f60-23-1114.xlsx', N)
     # # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # # data = data[ind]
     # # label = label[ind]
     # # data2 = data2[ind]
     # # label2 = label2[ind]
-    # ind = np.array([ 0,1,2,3,5,6,7,8,9,19,17,22,11,13,14,21])
+    # indall = [i for i in range(23)]
+    # indall = set(indall)
+    # indfew = [12]
+    # # indfew = []
+    # indfew = set(indfew)
+    # indroi = indall - indfew
+    # indroi = list(indroi)
+    # ind = np.array(indroi)
     # data = data[ind]
     # label = label[ind]
     # N = len(data)
