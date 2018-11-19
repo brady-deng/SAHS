@@ -48,6 +48,38 @@ from mpl_toolkits.mplot3d import Axes3D
 # clfcaskfold，级联分类器K折交叉训练并且返回训练结果
 # clfkfold,单分类器交叉训练结果
 ###########################################
+def seveva(ahipsg,ahiest):
+    ########################
+    #ahipsg, 根据PSG得到的ahi
+    #ahiest，根据分类器预测出的ahi
+    #返回的res是严重程度的混淆矩阵
+    l = len(ahipsg)
+    sepsg = []
+    seest = []
+    res = np.zeros((5,5))
+    for i in range(l):
+        if ahipsg[i]<5:
+            sepsg.append(0)
+        elif ahipsg[i]<=15:
+            sepsg.append(1)
+        elif ahipsg[i]<=30:
+            sepsg.append(2)
+        else:
+            sepsg.append(3)
+        if ahiest[i]<5:
+            seest.append(0)
+        elif ahiest[i]<=15:
+            seest.append(1)
+        elif ahiest[i]<=30:
+            seest.append(2)
+        else:
+            seest.append(3)
+    for i in range(l):
+        res[seest[i],sepsg[i]] = res[seest[i],sepsg[i]] + 1
+    res[-1,:] =res.sum(axis = 0)
+    res[:,-1] = res.sum(axis = 1)
+    return res
+
 def clfloadtest(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2,Y=0):
     #级联分类器交叉训练函数
     #data窗口1对应的数据，list类型
@@ -390,17 +422,17 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
     resevent = []
     respar = []
 
-    # for c1 in range(len(ind_minsplit)):
-    #     for c2 in range(len(ind_minleaf)):
-    #         for c3 in range(len(ind_maxdepth)):
-    #             for c4 in range(len(ind_minsplit)):
-    #                 for c5 in range(len(ind_minleaf)):
-    #                     for c6 in range(len(ind_maxdepth)):
-    #                         ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
     for c1 in range(len(ind_minsplit)):
         for c2 in range(len(ind_minleaf)):
             for c3 in range(len(ind_maxdepth)):
-                ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
+                for c4 in range(len(ind_minsplit)):
+                    for c5 in range(len(ind_minleaf)):
+                        for c6 in range(len(ind_maxdepth)):
+                            ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
+    # for c1 in range(len(ind_minsplit)):
+    #     for c2 in range(len(ind_minleaf)):
+    #         for c3 in range(len(ind_maxdepth)):
+    #             ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
     for i in range(N):
         datai = np.array([data[i]])
         labeli = np.array([label[i]])
@@ -448,8 +480,27 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             data[i], label[i], data2[i], label2[i], timeind1[i],timeind2[i],WT1, WT2, P)  #切割获得训练集、测试集
         resmat = np.zeros([int(1 / P) + 1, 22])
         for k in range(int(1 / P)):
+            #########################################
+            # 只使用完全正常与完全异常的片段进行训练，结果不理想，实际上丧失了
+            # 对边界处这种易混淆的数据的训练学习过程
+            # tempind = np.where(labeltrain1[k] == 2)
+            # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            # tempind = np.where(labeltrain2[k] == 2)
+            # datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
+            # labeltrain2[k] = np.delete(labeltrain2[k], tempind)
+            # tempind = np.where(labeltest1[k] == 2)
+            # labeltest1[k][tempind] = 0
+            # tempind = np.where(labeltest2[k] == 2)
+            # labeltest2[k][tempind] = 0
+            ##########################################
+            # 使标签中的2变到1
+            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            labeltest2[k][np.where(labeltest2[k] == 2)] = 0
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
-                                           0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
+                                           0, 0, ind[i*6:(i+1)*6], classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
             if Y:
                 joblib.dump(clfs[0],'60.joblib')
@@ -512,6 +563,17 @@ def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classwe
     P = float(input('Please input the proportion of the dataset:')) #训练街所占比重
     ind = input('Please input the par of the Decision tree(** ** ** ** ** **):').split()
     ind = [int(item) for item in ind]
+    if ind[0] == 1:
+        filename = input('Please input the filename of the file:')
+        tempind = pd.read_csv(filename+'.csv',header=None)
+        tempind = np.array(tempind)
+        m,n = tempind.shape
+        ind = []
+        for i in range(m):
+            for j in range(n):
+                ind.append(tempind[i,j])
+    else:
+        ind = ind*N
     res,resave,clfob = clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,classweight,N,Y)
     return res,resave
     # res = []

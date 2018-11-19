@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler,StandardScaler,Normalizer
 import pandas as pd
 import json
+import datetime
 
 if __name__ == '__main__':
     ################################
@@ -62,8 +63,8 @@ if __name__ == '__main__':
         wei.append(1028)
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label,timeind = function.load_data('f60-23-1114.xlsx', N)
-    data2,label2,timeind2 = function.load_data('f10-23-1114.xlsx', N)
+    data,label,timeind = function.load_data('f60-23-1119.xlsx', N)
+    data2,label2,timeind2 = function.load_data('f10-23-1119.xlsx', N)
 
     N = len(data)
     # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
@@ -86,9 +87,20 @@ if __name__ == '__main__':
     timeind2 = timeind2[ind]
     N = len(data)
     # res,resave = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 1)
+    # resse = function.seveva(resave[:-1,-2],resave[:-1,-1])
     res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
     # res, resave = function.clfloadtest(data, label, data2, label2, timeind, timeind2, N, WT1, WT2,)
-    print(res)
+    # resave = pd.DataFrame(resave)
+    # resse = pd.DataFrame(resse)
+    # nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # var1 = nowTime[5:7]
+    # var2 = nowTime[8:10]
+    # var3 = nowTime[11:13]
+    # var4 = nowTime[14:16]
+    # time = var1+var2+var3+var4
+    # resave.to_excel('resob'+time+'.xlsx')
+    # resse.to_excel('resse'+time+'.xlsx')
+    # print(res)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)
     # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
