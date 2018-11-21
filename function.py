@@ -82,6 +82,7 @@ def seveva(ahipsg,ahiest):
 
 def clfloadtest(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2,Y=0):
     #级联分类器交叉训练函数
+    #该函数不训练分类器，直接载入之前训练得到的分类器
     #data窗口1对应的数据，list类型
     #label窗口1对应的标签，list类型
     #data2窗口2对应的数据，list类型
@@ -495,10 +496,24 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             # labeltest2[k][tempind] = 0
             ##########################################
             # 使标签中的2变到1
-            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
-            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            # labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            # labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            # labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            ###########################################
+            # 2号分类器使用易混淆的数据进行训练
+            # 将测试集中的2号标签全部变为0
             labeltest1[k][np.where(labeltest1[k] == 2)] = 0
             labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            # 将训练集中的0号标签删除，只使用易混淆的2号标签与1号标签数据进行训练
+            tempind = np.where(labeltrain2[k] == 0)
+            datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
+            labeltrain2[k] = np.delete(labeltrain2[k], tempind)
+            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            tempind = np.where(labeltrain1[k] == 0)
+            datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind[i*6:(i+1)*6], classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
