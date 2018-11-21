@@ -336,11 +336,15 @@ def clfopt(data,label,timeind,N):
             labeli = np.array([label[i]])
             timeindi = np.array([timeind[i]])
             tempob.append(clfkfold("Ran", datai, labeli, timeindi, 1,ind[k],classweight,60))
-            ob.append(tempob[-1,3]+tempob[-1,4])
+            ob.append(tempob[k][-1,3]+tempob[k][-1,4])
         ob = np.array(ob)
         maxind = ob.argmax()
-        resob.append(tempob[maxind])
+        resob.append(tempob[maxind][-1,:])
         respar.append(ind[maxind])
+    # resob = np.array(resob)
+    # respar = np.array(respar)
+    parop = [ind_minsplit,ind_minleaf,ind_maxdepth]
+    parop = pd.DataFrame(parop)
     resob = pd.DataFrame(resob)
     respar = pd.DataFrame(respar)
     nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -351,6 +355,7 @@ def clfopt(data,label,timeind,N):
     time = var1 + var2 + var3 + var4
     resob.to_csv('resingle'+time+'.csv')
     respar.to_csv('resinglepar'+time+'.csv')
+    parop.to_csv('resingleparop'+time+'.csv')
 
 def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
     ######################################
@@ -360,18 +365,8 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
     ######################################
 
     # wei，决策树的类权重
-    if classweight[0] != 0:
-        wei = {0:classweight[0],1:classweight[1]}
-    else:
-        wei = 'balanced'
-    if clf == "Dec":
-        tempclf = DecisionTreeClassifier(class_weight=wei, min_samples_split=int(ind[0]),
-                                                          min_samples_leaf=int(ind[1]),
-                                                          max_depth=int(ind[2]), random_state=0)
-    if clf == "Ran":
-        tempclf = RandomForestClassifier(n_estimators=20,n_jobs=4,class_weight=wei, min_samples_split=int(ind[0]),
-                                                          min_samples_leaf=int(ind[1]),
-                                                          max_depth=int(ind[2]), random_state=0, oob_score= True, max_features=1)
+
+
     acuscore = []
     recascore = []
     prescore = []
@@ -399,6 +394,23 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
             datatest,labeltest,timetest = data[i][test_index],label[i][test_index],timeind[i][test_index]
             labeltrain[np.where(labeltrain == 2)] = 0
             labeltest[np.where(labeltest == 2)] = 0
+            tempk = len(labeltrain)/sum(labeltrain)
+            if classweight[0] != 0:
+                wei = {0: classweight[0], 1: classweight[1]}
+            else:
+                wei = 'balanced'
+            if classweight[0] == 1028:
+                wei = {0: 1, 1: tempk+3}
+            if clf == "Dec":
+                tempclf = DecisionTreeClassifier(class_weight=wei, min_samples_split=int(ind[0]),
+                                                 min_samples_leaf=int(ind[1]),
+                                                 max_depth=int(ind[2]), random_state=0)
+            if clf == "Ran":
+                tempclf = RandomForestClassifier(n_estimators=20, n_jobs=4, class_weight=wei,
+                                                 min_samples_split=int(ind[0]),
+                                                 min_samples_leaf=int(ind[1]),
+                                                 max_depth=int(ind[2]), random_state=0, oob_score=True, max_features=1)
+
             # resclf = AHItrain(tempclf,datatrain,labeltrain)
             tempclf.fit(datatrain,labeltrain)
             temppre = tempclf.predict(datatest)

@@ -112,12 +112,6 @@ if __name__ == '__main__':
     # 单分类器训练与事件检测
     N = int(input('Please input the index of the subjects you want to train:'))
     data,label,timeind = function.load_data('f60-23-1119.xlsx', N)
-    ind = input('Please input the par of the Decision tree(** ** **):').split() #决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
-    ind = [int(item) for item in ind]
-    indpar = ind
-    WT = int(input('Please input the window length:'))
-    classweight = input('Please input the classweight of the decision tree(** **):') #决策树的类权重
-    classweight = [int(item) for item in classweight.split()]
     # ind = np.array([ 0,1,2,7,9,11,13,14,21])
     # data = data[ind]
     # label = label[ind]
@@ -135,6 +129,12 @@ if __name__ == '__main__':
     label = label[ind]
     timeind = timeind[ind]
     N = len(data)
+    # ind = input('Please input the par of the Decision tree(** ** **):').split()  # 决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
+    # ind = [int(item) for item in ind]
+    # indpar = ind
+    # WT = int(input('Please input the window length:'))
+    # classweight = input('Please input the classweight of the decision tree(** **):')  # 决策树的类权重
+    # classweight = [int(item) for item in classweight.split()]
     # res0 = function.clfkfold("Ran", data, label, timeind,N,indpar,classweight,WT)
     # print(res0)
     function.clfopt(data,label,timeind,N)
