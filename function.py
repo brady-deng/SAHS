@@ -423,17 +423,17 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
     resevent = []
     respar = []
 
-    for c1 in range(len(ind_minsplit)):
-        for c2 in range(len(ind_minleaf)):
-            for c3 in range(len(ind_maxdepth)):
-                for c4 in range(len(ind_minsplit)):
-                    for c5 in range(len(ind_minleaf)):
-                        for c6 in range(len(ind_maxdepth)):
-                            ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
     # for c1 in range(len(ind_minsplit)):
     #     for c2 in range(len(ind_minleaf)):
     #         for c3 in range(len(ind_maxdepth)):
-    #             ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
+    #             for c4 in range(len(ind_minsplit)):
+    #                 for c5 in range(len(ind_minleaf)):
+    #                     for c6 in range(len(ind_maxdepth)):
+    #                         ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
+    for c1 in range(len(ind_minsplit)):
+        for c2 in range(len(ind_minleaf)):
+            for c3 in range(len(ind_maxdepth)):
+                ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
     for i in range(N):
         datai = np.array([data[i]])
         labeli = np.array([label[i]])
@@ -510,9 +510,9 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
             labeltrain2[k] = np.delete(labeltrain2[k], tempind)
             labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
-            tempind = np.where(labeltrain1[k] == 0)
-            datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
-            labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            # tempind = np.where(labeltrain1[k] == 0)
+            # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
             labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind[i*6:(i+1)*6], classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
