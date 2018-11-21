@@ -344,18 +344,21 @@ def clfopt(data,label,timeind,N):
     # resob = np.array(resob)
     # respar = np.array(respar)
     parop = [ind_minsplit,ind_minleaf,ind_maxdepth]
-    parop = pd.DataFrame(parop)
-    resob = pd.DataFrame(resob)
-    respar = pd.DataFrame(respar)
+    parop = pd.DataFrame(parop,index = ['ind_minsplit','ind_minleaf','ind_maxdepth'])
+    resob = pd.DataFrame(resob,columns=['acu','recall','pre','pre_e','recall_e'])
+    respar = pd.DataFrame(respar,columns=['ind_minsplit','ind_minleaf','ind_maxdepth'])
     nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     var1 = nowTime[5:7]
     var2 = nowTime[8:10]
     var3 = nowTime[11:13]
     var4 = nowTime[14:16]
     time = var1 + var2 + var3 + var4
-    resob.to_csv('resingle'+time+'.csv')
-    respar.to_csv('resinglepar'+time+'.csv')
-    parop.to_csv('resingleparop'+time+'.csv')
+    resexcel = pd.concat([resob,respar],axis = 1)
+    resexcel = pd.concat([resexcel,parop])
+    resexcel.to_csv('resingle'+time+'.csv')
+    # resob.to_csv('resingle'+time+'.csv')
+    # respar.to_csv('resinglepar'+time+'.csv')
+    # parop.to_csv('resingleparop'+time+'.csv')
 
 def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
     ######################################
@@ -507,6 +510,7 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
         for c2 in range(len(ind_minleaf)):
             for c3 in range(len(ind_maxdepth)):
                 ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
+    index = []
     for i in range(N):
         datai = np.array([data[i]])
         labeli = np.array([label[i]])
@@ -529,19 +533,26 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
         resob.append([ob2[ind_best][0],ob3[ind_best]])
         resevent.append(ob2[ind_best][0][8:13])
         respar.append(ind[ind_best])
-    resevent = pd.DataFrame(resevent)
-    respar = pd.DataFrame(respar)
+        index.append('res'+str(i))
+    columns = ['acu','recall','pre','e_pre','e_recall']
+    resevent = pd.DataFrame(resevent,index = index,columns=columns)
+    columns = ['ind_minsplit1','ind_minleaf1','ind_maxdepth1','ind_minsplit2','ind_minleaf2','ind_maxdepth2']
+    respar = pd.DataFrame(respar,index = index,columns = columns)
+    obpar = [ind_minsplit, ind_minleaf, ind_maxdepth]
+    index = ['ind_minsplit','ind_minleaf','ind_maxdepth']
+    obpar = pd.DataFrame(obpar,index)
     nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     var1 = nowTime[5:7]
     var2 = nowTime[8:10]
     var3 = nowTime[11:13]
     var4 = nowTime[14:16]
     time = var1+var2+var3+var4
-    resevent.to_excel('resave'+time+'.xlsx')
-    respar.to_excel('respar'+time+'.xlsx')
-    obpar = [ind_minsplit,ind_minleaf,ind_maxdepth]
-    obpar = pd.DataFrame(obpar)
-    obpar.to_excel('obpar'+time+'.xlsx')
+    resexcel = pd.concat([resevent,respar],axis=1)
+    resexcel = pd.concat([resexcel,obpar])
+    resexcel.to_excel('resave'+time+'.xlsx')
+    # resevent.to_excel('resave'+time+'.xlsx')
+    # respar.to_excel('respar'+time+'.xlsx')
+    # obpar.to_excel('obpar'+time+'.xlsx')
     return resob
 
 def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,classweight,N,Y):
@@ -965,7 +976,7 @@ def eventdetect(var1,var3,var4,var5,var7,var8):
         if flag[i] == 0:
             wrongres.append([var7[i], var8[i]])
     if var5 != 0:
-        eva.append(100 * sum(flag) / len(flag))
+        eva.append(1 * sum(flag) / len(flag))
     else:
         eva.append(0)
     flag2 = [0] * var1
@@ -976,9 +987,9 @@ def eventdetect(var1,var3,var4,var5,var7,var8):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
     if var1 != 0:
-        eva.append(100 * (var1 - len(missres)) / var1)
+        eva.append(1 * (var1 - len(missres)) / var1)
     else:
-        eva.append(100 * (var1 - len(missres)))
+        eva.append(1 * (var1 - len(missres)))
     return wrongres,missres,eva,res
 def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,WT2):
     #############################
@@ -1069,7 +1080,7 @@ def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,W
                 for k in range(var1):
                     missres.append([var3[k], var4[k]])
             else:
-                eva = [100, 100]
+                eva = [1, 1]
                 wrongres = []
                 missres = []
     else:
@@ -1179,7 +1190,7 @@ def clfcas(clfs, data, label, data2, label2, sust, Y):
         # res.append(tempflag)
         if flag[i] == 0:
             wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
+    eva.append(1 * sum(flag) / len(flag))
     flag2 = [0] * var1
     missres = []
     for item in res:
@@ -1187,7 +1198,7 @@ def clfcas(clfs, data, label, data2, label2, sust, Y):
     for i in range(var1):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
+    eva.append(1 * (var1 - len(missres)) / var1)
     wrongloc = []
     for item in wrongres:
         wrongloc.append([map[0][item[0]], map[0][item[1]]])
@@ -1242,7 +1253,7 @@ def AHItrain(clfs, data, label):
         # res.append(tempflag)
         if flag[i] == 0:
             wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
+    eva.append(1 * sum(flag) / len(flag))
     flag2 = [0] * var1
     missres = []
     for item in res:
@@ -1250,7 +1261,7 @@ def AHItrain(clfs, data, label):
     for i in range(var1):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
+    eva.append(1 * (var1 - len(missres)) / var1)
     return tempclf
 
 
@@ -1286,7 +1297,7 @@ def AHItest(clfs, data, label):
         # res.append(tempflag)
         if flag[i] == 0:
             wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
+    eva.append(1 * sum(flag) / len(flag))
     flag2 = [0] * var1
     missres = []
     for item in res:
@@ -1294,7 +1305,7 @@ def AHItest(clfs, data, label):
     for i in range(var1):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
+    eva.append(1 * (var1 - len(missres)) / var1)
     return ind, wrongres, eva, missres, var1
 
 
@@ -1341,7 +1352,7 @@ def AHIres(clfs, data, label):
         # res.append(tempflag)
         if flag[i] == 0:
             wrongres.append([var7[i], var8[i]])
-    eva.append(100 * sum(flag) / len(flag))
+    eva.append(1 * sum(flag) / len(flag))
     flag2 = [0] * var1
     missres = []
     for item in res:
@@ -1349,7 +1360,7 @@ def AHIres(clfs, data, label):
     for i in range(var1):
         if flag2[i] == 0:
             missres.append([var3[i], var4[i]])
-    eva.append(100 * (var1 - len(missres)) / var1)
+    eva.append(1 * (var1 - len(missres)) / var1)
     return ind, wrongres, eva, missres
 
 

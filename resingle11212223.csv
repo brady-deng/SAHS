@@ -1,0 +1,5 @@
+,acu,recall,pre,pre_e,recall_e,ind_minsplit,ind_minleaf,ind_maxdepth,0
+0,0.9027698294609134,0.7482422405457962,0.5459834093337377,0.0,0.0,10.0,10.0,10.0,
+ind_minsplit,,,,,,,,,10.0
+ind_minleaf,,,,,,,,,10.0
+ind_maxdepth,,,,,,,,,10.0
