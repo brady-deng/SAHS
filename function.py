@@ -311,16 +311,54 @@ def mapwindow(WT1,WT2,ind1,ind2):
     for i in range(1,len(temptest)):
         indtest = np.hstack([indtest,temptest[i]])
     return indtest
-def clfkfold(clf,data,label,N):
+def clfopt(data,label,timeind,N):
+    ind_minsplit = input('Please input the min_samples_split(** ** ** **):').split()
+    ind_minleaf = input('Please input the min_samples_leaf(** ** ** **):').split()
+    ind_maxdepth = input('Please input the max_depth(** ** ** **):').split()
+    ind_minsplit = [int(item) for item in ind_minsplit]
+    ind_minleaf = [int(item) for item in ind_minleaf]
+    ind_maxdepth = [int(item) for item in ind_maxdepth]
+    WT = int(input('Please input the window length:'))
+    classweight = input('Please input the classweight of the decision tree(** **):') #决策树的类权重
+    classweight = [int(item) for item in classweight.split()]
+    ind = []
+    for c1 in range(len(ind_minsplit)):
+        for c2 in range(len(ind_minleaf)):
+            for c3 in range(len(ind_maxdepth)):
+                ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
+    resob = []
+    respar = []
+    for i in range(N):
+        ob = []
+        tempob = []
+        for k in range(len(ind)):
+            datai = np.array([data[i]])
+            labeli = np.array([label[i]])
+            timeindi = np.array([timeind[i]])
+            tempob.append(clfkfold("Ran", datai, labeli, timeindi, 1,ind[k],classweight,60))
+            ob.append(tempob[-1,3]+tempob[-1,4])
+        ob = np.array(ob)
+        maxind = ob.argmax()
+        resob.append(tempob[maxind])
+        respar.append(ind[maxind])
+    resob = pd.DataFrame(resob)
+    respar = pd.DataFrame(respar)
+    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    var1 = nowTime[5:7]
+    var2 = nowTime[8:10]
+    var3 = nowTime[11:13]
+    var4 = nowTime[14:16]
+    time = var1 + var2 + var3 + var4
+    resob.to_csv('resingle'+time+'.csv')
+    respar.to_csv('resinglepar'+time+'.csv')
+
+def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
     ######################################
     #单分类器交叉验证
     #输入的是分类器名称，data，label以及被试数目
     #返回的score包含acu、recall、precision
     ######################################
-    ind = input('Please input the par of the Decision tree(** ** **):').split() #决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
-    ind = [int(item) for item in ind]
-    classweight = input('Please input the classweight of the decision tree(** **):') #决策树的类权重
-    classweight = [int(item) for item in classweight.split()]
+
     # wei，决策树的类权重
     if classweight[0] != 0:
         wei = {0:classweight[0],1:classweight[1]}
@@ -337,6 +375,7 @@ def clfkfold(clf,data,label,N):
     acuscore = []
     recascore = []
     prescore = []
+    evascore = []
     # for i in range(N):
     #     acuscore.append(cross_val_score(tempclf,data[i],label[i],n_jobs=4,cv=2,scoring='accuracy')) #分类器交叉训练得到的正确率
     #     recascore.append(cross_val_score(tempclf, data[i], label[i], n_jobs=4, cv=2, scoring='recall')) #分类器交叉训练得到的召回率
@@ -350,50 +389,72 @@ def clfkfold(clf,data,label,N):
     count = 0
     for i in range(N):
         count = 0
-        eva = np.zeros((3, 5))
+        # eva = np.zeros((3, 5))
+        evaob = []
         tempacu = []
         temprec = []
         temppr = []
         for train_index,test_index in kf.split(data[i]):
-            datatrain,labeltrain = data[i][train_index],label[i][train_index]
-            datatest,labeltest = data[i][test_index],label[i][test_index]
-            resclf = AHItrain(tempclf,datatrain,labeltrain)
+            datatrain,labeltrain,timetrain = data[i][train_index],label[i][train_index],timeind[i][train_index]
+            datatest,labeltest,timetest = data[i][test_index],label[i][test_index],timeind[i][test_index]
+            labeltrain[np.where(labeltrain == 2)] = 0
+            labeltest[np.where(labeltest == 2)] = 0
+            # resclf = AHItrain(tempclf,datatrain,labeltrain)
             tempclf.fit(datatrain,labeltrain)
             temppre = tempclf.predict(datatest)
             tempacu.append(accuracy_score(labeltest,temppre))
             temprec.append(recall_score(labeltest,temppre))
             temppr.append(precision_score(labeltest,temppre))
-            tempres = AHItest(resclf,datatest,labeltest)
-            eva[count,0] = len(tempres[1])
-            eva[count,1] = len(tempres[3])
-            eva[count,2] = tempres[4]
-            eva[count,3:] = tempres[2]
-            count +=1
+            # tempres = AHItest(resclf,datatest,labeltest)
+            var2,var3,var4 = roidetect(labeltest,timetest)
+            var3 = ind2time(var2, var3)
+            var4 = ind2time(var2, var4)
+            var1 = len(var3)
+            temppre = prefilter(labeltest, timetest, temppre, WT, 5)
+            var6,var7,var8 = roidetect(temppre,timetest)
+            var5 = len(var7)
+            if var5 != 0:
+                var7 = ind2time(var6, var7)
+                var8 = ind2time(var6, var8)
+                wrongres, missres, eva, res = eventdetect(var1, var3, var4, var5, var7, var8)
+            else:
+                if var1 != 0:
+                    eva = [0,0]
+                else:
+                    eva = [1,1]
+
+            evaob.append(eva)
         tempacu = np.array(tempacu)
         temprec = np.array(temprec)
         temppr = np.array(temppr)
+        evaob = np.array(evaob)
         acuscore.append(tempacu)
         recascore.append(temprec)
         prescore.append(temppr)
-        eva[-1, 0] = eva[0:2, 0].sum()
-        eva[-1, 1] = eva[0:2, 1].sum()
-        eva[-1, 2] = eva[0:2, 2].sum()
-        eva[-1,3] = (eva[-1,2] - eva[-1,1])/(eva[-1,2]-eva[-1,1]+eva[-1,0])
-        eva[-1,4] = (eva[-1,2]-eva[-1,1])/eva[-1,2]
-        res.append(eva)
+        evascore.append(evaob)
+        # eva[-1, 0] = eva[0:2, 0].sum()
+        # eva[-1, 1] = eva[0:2, 1].sum()
+        # eva[-1, 2] = eva[0:2, 2].sum()
+        # eva[-1,3] = (eva[-1,2] - eva[-1,1])/(eva[-1,2]-eva[-1,1]+eva[-1,0])
+        # eva[-1,4] = (eva[-1,2]-eva[-1,1])/eva[-1,2]
+        # res.append(eva)
 
     score = []
     ob = np.zeros([N+1,5])
 
     for i in range(N):
-        score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
-        ob[i,:] = res[i][-1,:]
-    ob[-1,0] = ob[0:-1,0].sum()
-    ob[-1,1] = ob[0:-1,1].sum()
-    ob[-1,2] = ob[0:-1,2].sum()
-    ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
-    ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
-    return score,ob
+        score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean(),evascore[i][:,0].mean(),evascore[i][:,1].mean()])
+    score = np.array(score)
+    res = np.zeros([N+1,5])
+    res[0:-1,:] = score
+    res[-1,:] = score.mean(axis = 0)
+    #     ob[i,:] = res[i][-1,:]
+    # ob[-1,0] = ob[0:-1,0].sum()
+    # ob[-1,1] = ob[0:-1,1].sum()
+    # ob[-1,2] = ob[0:-1,2].sum()
+    # ob[-1, 3] = (ob[-1, 2] - ob[-1, 1]) / (ob[-1, 2] - ob[-1, 1] + ob[-1, 0])
+    # ob[-1, 4] = (ob[-1, 2] - ob[-1, 1]) / ob[-1, 2]
+    return res
 def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweight = ['balanced','balanced'],Y=0):
 
     #级联分类器交叉训练函数
@@ -914,6 +975,9 @@ def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,W
     #data2，20s测试数据
     #sust，60s窗口延长时间
     #Y，是否画出决策树标志
+    #返回的ind1是级联分类器1的片段数据预测结果
+    #返回的ind2是级联分类器2的片段数据预测结果
+    #返回的ind3与segscore是级联分类器的总的片段数据的预测结果
     #############################
     tempclf = clfs  #集成刚才训练好的分类器
     temppre = tempclf[0].predict(data)  #60s预测输出
