@@ -45,50 +45,50 @@ if __name__ == '__main__':
 #926
 #########################
     # 级联分类器K折交叉训练
-    # N = int(input('Please input the index of the subjects you want to train and test:'))
-    # WT1 = int(input('Please input the length of window1:'))
-    # WT2 = int(input('Please input the length of window2:'))
-    # classweight = input('Please input the classweight of the decision tree(** ** ** **):')
-    # classweight = [int(item) for item in classweight.split()]
-    # wei = []
-    # if classweight[0] == 0:
-    #     wei.append('balanced')
-    # elif classweight[0] == 1028:
-    #     wei.append(1028)
-    # else:
-    #     wei.append({0:classweight[0],1:classweight[1]})
-    # if classweight[2] == 0:
-    #     wei.append('balanced')
-    # elif classweight[2] == 1028:
-    #     wei.append(1028)
-    # else:
-    #     wei.append({0:classweight[2],1:classweight[3]})
-    # data,label,timeind = function.load_data('f60-1-1119.xlsx', N)
-    # data2,label2,timeind2 = function.load_data('f10-1-1119.xlsx', N)
-    #
-    # N = len(data)
-    # # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
-    # # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
-    # # indall = [i for i in range(23)]
-    # # indall = set(indall)
-    # # # indfew = [4,5,6,8,10,12,14,15,16]
-    # # indfew = [12]
-    # # # indfew = []
-    # # indfew = set(indfew)
-    # # indroi = indall - indfew
-    # # indroi = list(indroi)
-    # # # # indroi = [0,1,2,7,9,11,13,14,21]
-    # # ind = np.array(indroi)
-    # # data = data[ind]
-    # # label = label[ind]
-    # # timeind = timeind[ind]
-    # # data2 = data2[ind]
-    # # label2 = label2[ind]
-    # # timeind2 = timeind2[ind]
-    # N = len(data)
+    N = int(input('Please input the index of the subjects you want to train and test:'))
+    WT1 = int(input('Please input the length of window1:'))
+    WT2 = int(input('Please input the length of window2:'))
+    classweight = input('Please input the classweight of the decision tree(** ** ** **):')
+    classweight = [int(item) for item in classweight.split()]
+    wei = []
+    if classweight[0] == 0:
+        wei.append('balanced')
+    elif classweight[0] == 1028:
+        wei.append(1028)
+    else:
+        wei.append({0:classweight[0],1:classweight[1]})
+    if classweight[2] == 0:
+        wei.append('balanced')
+    elif classweight[2] == 1028:
+        wei.append(1028)
+    else:
+        wei.append({0:classweight[2],1:classweight[3]})
+    data,label,timeind = function.load_data('f60-23-1119.xlsx', N)
+    data2,label2,timeind2 = function.load_data('f10-23-1119.xlsx', N)
+
+    N = len(data)
+    # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
+    # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
+    indall = [i for i in range(23)]
+    indall = set(indall)
+    # indfew = [4,5,6,8,10,12,14,15,16]
+    indfew = [12]
+    # indfew = []
+    indfew = set(indfew)
+    indroi = indall - indfew
+    indroi = list(indroi)
+    # # indroi = [0,1,2,7,9,11,13,14,21]
+    ind = np.array(indroi)
+    data = data[ind]
+    label = label[ind]
+    timeind = timeind[ind]
+    data2 = data2[ind]
+    label2 = label2[ind]
+    timeind2 = timeind2[ind]
+    N = len(data)
     # res,resave = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 1)
     # resse = function.seveva(resave[:-1,-2],resave[:-1,-1])
-    # res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
+    res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=0)
     # # res, resave = function.clfloadtest(data, label, data2, label2, timeind, timeind2, N, WT1, WT2,)
     # keys = []
     # for i in range(N):
@@ -125,34 +125,34 @@ if __name__ == '__main__':
 
 
     # 单分类器训练与事件检测
-    N = int(input('Please input the index of the subjects you want to train:'))
-    data,label,timeind = function.load_data('f10-1-1119.xlsx', N)
-    # ind = np.array([ 0,1,2,7,9,11,13,14,21])
-    # data = data[ind]
-    # label = label[ind]
-    # data2 = data2[ind]
-    # label2 = label2[ind]
-    # indall = [i for i in range(23)]
-    # indall = set(indall)
-    # indfew = [12]
-    # # indfew = []
-    # indfew = set(indfew)
-    # indroi = indall - indfew
-    # indroi = list(indroi)
-    # ind = np.array(indroi)
-    # data = data[ind]
-    # label = label[ind]
-    # timeind = timeind[ind]
-    N = len(data)
-    # ind = input('Please input the par of the Decision tree(** ** **):').split()  # 决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
-    # ind = [int(item) for item in ind]
-    # indpar = ind
-    # WT = int(input('Please input the window length:'))
-    # classweight = input('Please input the classweight of the decision tree(** **):')  # 决策树的类权重
-    # classweight = [int(item) for item in classweight.split()]
-    # res0 = function.clfkfold("Ran", data, label, timeind,N,indpar,classweight,WT)
-    # print(res0)
-    function.clfopt(data,label,timeind,N)
+    # N = int(input('Please input the index of the subjects you want to train:'))
+    # data,label,timeind = function.load_data('f10-1-1119.xlsx', N)
+    # # ind = np.array([ 0,1,2,7,9,11,13,14,21])
+    # # data = data[ind]
+    # # label = label[ind]
+    # # data2 = data2[ind]
+    # # label2 = label2[ind]
+    # # indall = [i for i in range(23)]
+    # # indall = set(indall)
+    # # indfew = [12]
+    # # # indfew = []
+    # # indfew = set(indfew)
+    # # indroi = indall - indfew
+    # # indroi = list(indroi)
+    # # ind = np.array(indroi)
+    # # data = data[ind]
+    # # label = label[ind]
+    # # timeind = timeind[ind]
+    # N = len(data)
+    # # ind = input('Please input the par of the Decision tree(** ** **):').split()  # 决策树的叶子节点的参数设置，最小样本切割，最小叶子样本，最大深度
+    # # ind = [int(item) for item in ind]
+    # # indpar = ind
+    # # WT = int(input('Please input the window length:'))
+    # # classweight = input('Please input the classweight of the decision tree(** **):')  # 决策树的类权重
+    # # classweight = [int(item) for item in classweight.split()]
+    # # res0 = function.clfkfold("Ran", data, label, timeind,N,indpar,classweight,WT)
+    # # print(res0)
+    # function.clfopt(data,label,timeind,N)
 
 
     # 单分类器事件检测
