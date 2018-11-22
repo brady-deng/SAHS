@@ -579,7 +579,7 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             # tempind = np.where(labeltest2[k] == 2)
             # labeltest2[k][tempind] = 0
             ##########################################
-            # 使标签中的2变到1
+            # 使标签中的2变到0
             # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
             # labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
             # labeltest1[k][np.where(labeltest1[k] == 2)] = 0
