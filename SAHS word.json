@@ -2,5 +2,6 @@
   "ODI":"oxygen desaturation index, which is the total sum of oxygen desaturation
   events per hour",
   "PR":"pulse rate",
+  "detection rate":"检出率"
 
 }
