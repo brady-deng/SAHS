@@ -86,35 +86,37 @@ if __name__ == '__main__':
     label2 = label2[ind]
     timeind2 = timeind2[ind]
     N = len(data)
-    # res,resave = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 1)
-    # resse = function.seveva(resave[:-1,-2],resave[:-1,-1])
-    res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=0)
-    # # res, resave = function.clfloadtest(data, label, data2, label2, timeind, timeind2, N, WT1, WT2,)
-    # keys = []
-    # for i in range(N):
-    #     keys.append('sub'+str(i))
-    # keys.append('ave')
-    # columns = ['nump','numn','acu1','recall1','pre1','acu2','recall2','pre2','acu3','recall3','pre3',\
-    #            'pre_e','recall_e','wrong_e','miss_e','total_e','p_test','n_test','true_pre','true_p','ahi_psg',\
-    #            'ahi_pre']
-    # resave = pd.DataFrame(resave,index = keys,columns=columns)
-    # keys = ['normal','slight','normal','serious','total']
-    # # resse2 = np.zeros((6,5))
-    # # resse2[1:,:] = resse
-    # # resse2[0,:] = np.arange(1,6)
-    # resse = pd.DataFrame(resse,index = keys,columns=keys)
-    # nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # var1 = nowTime[5:7]
-    # var2 = nowTime[8:10]
-    # var3 = nowTime[11:13]
-    # var4 = nowTime[14:16]
-    # time = var1+var2+var3+var4
-    # writer = pd.ExcelWriter('resob'+time+'.xlsx')
-    # resave.to_excel(writer,'Sheet1')
-    # resse.to_excel(writer,'Sheet2')
-    # writer.save()
-    # resexcel = pd.concat([resave,resse])
-    # resexcel.to_excel('resob'+time+'.xlsx')
+    res,resave,par = function.clfcaskfold(data,label,data2,label2,timeind,timeind2,N,WT1,WT2,classweight = wei,Y = 0)
+    resse = function.seveva(resave[:-1,-2],resave[:-1,-1])
+    # res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
+    # res, resave = function.clfloadtest(data, label, data2, label2, timeind, timeind2, N, WT1, WT2,)
+    keys = []
+    for i in range(N):
+        keys.append('sub'+str(i))
+    keys.append('ave')
+    columns = ['nump','numn','acu1','recall1','pre1','acu2','recall2','pre2','acu3','recall3','pre3',\
+               'pre_e','recall_e','wrong_e','miss_e','total_e','p_test','n_test','true_pre','true_p','ahi_psg',\
+               'ahi_pre']
+    resave = pd.DataFrame(resave,index = keys,columns=columns)
+    columns = ['ind_minsplit1', 'ind_minleaf1', 'ind_maxdepth1', 'ind_minsplit2', 'ind_minleaf2', 'ind_maxdepth2']
+    del keys[-1]
+    par = pd.DataFrame(par,columns=columns,index = keys)
+    resexcel = pd.concat([resave,par],axis = 1)
+    keys = ['normal','slight','normal','serious','total']
+    # resse2 = np.zeros((6,5))
+    # resse2[1:,:] = resse
+    # resse2[0,:] = np.arange(1,6)
+    resse = pd.DataFrame(resse,index = keys,columns=keys)
+    nowTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    var1 = nowTime[5:7]
+    var2 = nowTime[8:10]
+    var3 = nowTime[11:13]
+    var4 = nowTime[14:16]
+    time = var1+var2+var3+var4
+    writer = pd.ExcelWriter('resob'+time+'.xlsx')
+    resexcel.to_excel(writer,'Sheet1')
+    resse.to_excel(writer,'Sheet2')
+    writer.save()
     # print(res)
 
     # data, label = function.createdataset(data, label, 0.5, N, 2)

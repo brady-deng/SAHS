@@ -674,7 +674,7 @@ def clfcaskfold(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classwe
     else:
         ind = ind*N
     res,resave,clfob = clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,classweight,N,Y)
-    return res,resave
+    return res,resave,tempind
     # res = []
     # resave = np.zeros([N+1, 22])
     # for i in range(N):
