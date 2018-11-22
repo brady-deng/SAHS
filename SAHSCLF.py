@@ -67,7 +67,7 @@ if __name__ == '__main__':
     data2,label2,timeind2 = function.load_data('f10-23-1119.xlsx', N)
 
     N = len(data)
-    # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
+    data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
     # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
     indall = [i for i in range(23)]
     indall = set(indall)
@@ -97,10 +97,10 @@ if __name__ == '__main__':
     columns = ['nump','numn','acu1','recall1','pre1','acu2','recall2','pre2','acu3','recall3','pre3',\
                'pre_e','recall_e','wrong_e','miss_e','total_e','p_test','n_test','true_pre','true_p','ahi_psg',\
                'ahi_pre']
-    resave = pd.DataFrame(resave,index = keys,columns=columns)
+    resave = pd.DataFrame(resave,columns=columns)
     columns = ['ind_minsplit1', 'ind_minleaf1', 'ind_maxdepth1', 'ind_minsplit2', 'ind_minleaf2', 'ind_maxdepth2']
     del keys[-1]
-    par = pd.DataFrame(par,columns=columns,index = keys)
+    par = pd.DataFrame(par,columns=columns)
     resexcel = pd.concat([resave,par],axis = 1)
     keys = ['normal','slight','normal','serious','total']
     # resse2 = np.zeros((6,5))
