@@ -499,17 +499,17 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
     resevent = []
     respar = []
 
-    # for c1 in range(len(ind_minsplit)):
-    #     for c2 in range(len(ind_minleaf)):
-    #         for c3 in range(len(ind_maxdepth)):
-    #             for c4 in range(len(ind_minsplit)):
-    #                 for c5 in range(len(ind_minleaf)):
-    #                     for c6 in range(len(ind_maxdepth)):
-    #                         ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
     for c1 in range(len(ind_minsplit)):
         for c2 in range(len(ind_minleaf)):
             for c3 in range(len(ind_maxdepth)):
-                ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
+                for c4 in range(len(ind_minsplit)):
+                    for c5 in range(len(ind_minleaf)):
+                        for c6 in range(len(ind_maxdepth)):
+                            ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c4],ind_minleaf[c5],ind_maxdepth[c6]])
+    # for c1 in range(len(ind_minsplit)):
+    #     for c2 in range(len(ind_minleaf)):
+    #         for c3 in range(len(ind_maxdepth)):
+    #             ind.append([ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3],ind_minsplit[c1],ind_minleaf[c2],ind_maxdepth[c3]])
     index = []
     for i in range(N):
         datai = np.array([data[i]])
