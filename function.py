@@ -383,6 +383,8 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
     #     score.append([acuscore[i].mean(),recascore[i].mean(),prescore[i].mean()])
     kf = KFold(n_splits=2)
     res = []
+    resp = []
+    resn = []
 
     count = 0
     for i in range(N):
@@ -392,9 +394,15 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
         tempacu = []
         temprec = []
         temppr = []
+        ob = []
+        obp = []
+        obn = []
         for train_index,test_index in kf.split(data[i]):
             datatrain,labeltrain,timetrain = data[i][train_index],label[i][train_index],timeind[i][train_index]
             datatest,labeltest,timetest = data[i][test_index],label[i][test_index],timeind[i][test_index]
+            ob.append(len(labeltest))
+            obp.append(sum(labeltest))
+            obn.append(len(labeltest) - sum(labeltest))
             labeltrain[np.where(labeltrain == 2)] = 0
             labeltest[np.where(labeltest == 2)] = 0
             tempk = len(labeltrain)/sum(labeltrain)
@@ -417,15 +425,16 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
             # resclf = AHItrain(tempclf,datatrain,labeltrain)
             tempclf.fit(datatrain,labeltrain)
             temppre = tempclf.predict(datatest)
-            tempacu.append(accuracy_score(labeltest,temppre))
-            temprec.append(recall_score(labeltest,temppre))
-            temppr.append(precision_score(labeltest,temppre))
+
             # tempres = AHItest(resclf,datatest,labeltest)
             var2,var3,var4 = roidetect(labeltest,timetest)
             var3 = ind2time(var2, var3)
             var4 = ind2time(var2, var4)
             var1 = len(var3)
             temppre = prefilter(labeltest, timetest, temppre, WT, 5)
+            tempacu.append(accuracy_score(labeltest, temppre))
+            temprec.append(recall_score(labeltest, temppre))
+            temppr.append(precision_score(labeltest, temppre))
             var6,var7,var8 = roidetect(temppre,timetest)
             var5 = len(var7)
             if var5 != 0:
@@ -447,6 +456,9 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
         recascore.append(temprec)
         prescore.append(temppr)
         evascore.append(evaob)
+        res.append(ob)
+        resp.append(obp)
+        resn.append(obn)
         # eva[-1, 0] = eva[0:2, 0].sum()
         # eva[-1, 1] = eva[0:2, 1].sum()
         # eva[-1, 2] = eva[0:2, 2].sum()
@@ -455,6 +467,7 @@ def clfkfold(clf,data,label,timeind,N,ind,classweight,WT):
         # res.append(eva)
 
     score = []
+
     ob = np.zeros([N+1,5])
 
     for i in range(N):
