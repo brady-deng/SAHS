@@ -48,6 +48,16 @@ from mpl_toolkits.mplot3d import Axes3D
 # clfcaskfold，级联分类器K折交叉训练并且返回训练结果
 # clfkfold,单分类器交叉训练结果
 ###########################################
+def indob(ob,timeind):
+    res = []
+    for item in ob:
+        temp = time2ind(timeind,item)
+        temp = temp+1
+        res.append(temp)
+    res = pd.DataFrame(res)
+    filename = input('Please input the filename:')
+    res.to_csv(filename+'.csv')
+    return res
 def seveva(ahipsg,ahiest):
     ########################
     #ahipsg, 根据PSG得到的ahi
@@ -593,24 +603,24 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             # labeltest2[k][tempind] = 0
             ##########################################
             # 使标签中的2变到0
-            # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
-            # labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
-            # labeltest1[k][np.where(labeltest1[k] == 2)] = 0
-            # labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            labeltest2[k][np.where(labeltest2[k] == 2)] = 0
             ###########################################
             # 2号分类器使用易混淆的数据进行训练
             # 将测试集中的2号标签全部变为0
-            labeltest1[k][np.where(labeltest1[k] == 2)] = 0
-            labeltest2[k][np.where(labeltest2[k] == 2)] = 0
-            # 将训练集中的0号标签删除，只使用易混淆的2号标签与1号标签数据进行训练
-            tempind = np.where(labeltrain2[k] == 0)
-            datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
-            labeltrain2[k] = np.delete(labeltrain2[k], tempind)
-            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
-            # tempind = np.where(labeltrain1[k] == 0)
-            # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
-            # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
-            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            # labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            # labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            # # 将训练集中的0号标签删除，只使用易混淆的2号标签与1号标签数据进行训练
+            # tempind = np.where(labeltrain2[k] == 0)
+            # datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
+            # labeltrain2[k] = np.delete(labeltrain2[k], tempind)
+            # labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            # # tempind = np.where(labeltrain1[k] == 0)
+            # # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            # # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind[i*6:(i+1)*6], classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
