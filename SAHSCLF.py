@@ -63,8 +63,8 @@ if __name__ == '__main__':
         wei.append(1028)
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label,timeind = function.load_data('f60-23-1212.xlsx', N)
-    data2,label2,timeind2 = function.load_data('f10-23-1212.xlsx', N)
+    data,label,timeind = function.load_data('f60-23-1119.xlsx', N)
+    data2,label2,timeind2 = function.load_data('f10-23-1119.xlsx', N)
 
     N = len(data)
     # # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     indroi = list(indroi)
     # # indroi = [0,1,2,7,9,11,13,14,21]
     ind = np.array(indroi)
+    ind = np.array([0,1,2,3,6,7,9,13,17,19,20,21,22])
     data = data[ind]
     label = label[ind]
     timeind = timeind[ind]
