@@ -63,28 +63,28 @@ if __name__ == '__main__':
         wei.append(1028)
     else:
         wei.append({0:classweight[2],1:classweight[3]})
-    data,label,timeind = function.load_data('f60-8-1119.xlsx', N)
-    data2,label2,timeind2 = function.load_data('f10-8-1119.xlsx', N)
+    data,label,timeind = function.load_data('f60-23-1212.xlsx', N)
+    data2,label2,timeind2 = function.load_data('f10-23-1212.xlsx', N)
 
     N = len(data)
     # # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
     # # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
-    # indall = [i for i in range(23)]
-    # indall = set(indall)
-    # # indfew = [4,5,6,8,10,12,14,15,16]
-    # indfew = [12]
-    # # indfew = []
-    # indfew = set(indfew)
-    # indroi = indall - indfew
-    # indroi = list(indroi)
-    # # # indroi = [0,1,2,7,9,11,13,14,21]
-    # ind = np.array(indroi)
-    # data = data[ind]
-    # label = label[ind]
-    # timeind = timeind[ind]
-    # data2 = data2[ind]
-    # label2 = label2[ind]
-    # timeind2 = timeind2[ind]
+    indall = [i for i in range(23)]
+    indall = set(indall)
+    # indfew = [4,5,6,8,10,12,14,15,16]
+    indfew = [12]
+    # indfew = []
+    indfew = set(indfew)
+    indroi = indall - indfew
+    indroi = list(indroi)
+    # # indroi = [0,1,2,7,9,11,13,14,21]
+    ind = np.array(indroi)
+    data = data[ind]
+    label = label[ind]
+    timeind = timeind[ind]
+    data2 = data2[ind]
+    label2 = label2[ind]
+    timeind2 = timeind2[ind]
     N = len(data)
     # res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
 
