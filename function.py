@@ -622,6 +622,8 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
     res = []
     resave = np.zeros([N+1, 22])
     clfob = []
+    traintime = 0;
+    testtime = 0;
     for i in range(N):
         resi = []
         datatrain1, labeltrain1, datatest1, labeltest1, timetest1,datatrain2, labeltrain2, datatest2, labeltest2,timetest2 = casdata(
@@ -661,9 +663,15 @@ def clfcastraintest(data,data2,label,label2,timeind1,timeind2,WT1,WT2,P,ind,clas
             # # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
             # # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
             # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            sttrain = datetime.datetime.now()
             clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
                                            0, 0, ind[i*6:(i+1)*6], classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
+            ettrain = datetime.datetime.now()
+            traintime = traintime+(ettrain-sttrain).total_seconds()
+            sttest = datetime.datetime.now()
             tempres = clfcastest(clfs, datatest1[k], labeltest1[k], timetest1[k],datatest2[k], labeltest2[k],timetest2[k], 0, 0,WT1,WT2)
+            ettest = datetime.datetime.now()
+            testtime = testtime+(ettest-sttest).total_seconds()
             if Y:
                 joblib.dump(clfs[0],'60.joblib')
                 joblib.dump(clfs[1],'10.joblib')
