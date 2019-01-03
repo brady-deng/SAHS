@@ -69,6 +69,7 @@ if __name__ == '__main__':
     N = len(data)
     # # data, label, timeind = function.createdataset(data, label, timeind, 0.5, N, 5)
     # # # data2, label2 = function.createdataset(data2, label2, 0.5, N, 2)
+<<<<<<< HEAD
     # indall = [i for i in range(23)]
     # indall = set(indall)
     # # indfew = [4,5,6,8,10,12,14,15,16]
@@ -86,6 +87,25 @@ if __name__ == '__main__':
     # data2 = data2[ind]
     # label2 = label2[ind]
     # timeind2 = timeind2[ind]
+=======
+    indall = [i for i in range(23)]
+    indall = set(indall)
+    # indfew = [4,5,6,8,10,12,14,15,16]
+    indfew = [12]
+    # indfew = []
+    indfew = set(indfew)
+    indroi = indall - indfew
+    indroi = list(indroi)
+    # # indroi = [0,1,2,7,9,11,13,14,21]
+    ind = np.array(indroi)
+    ind = np.array([0,1,2,3,4,6,7,9,13,15,17,19,20,21,22])
+    data = data[ind]
+    label = label[ind]
+    timeind = timeind[ind]
+    data2 = data2[ind]
+    label2 = label2[ind]
+    timeind2 = timeind2[ind]
+>>>>>>> 64ea66943e918df50cb571568e6015bfa4e2388e
     N = len(data)
     # res = function.clfcasopt(data, label, data2, label2, timeind, timeind2, N, WT1, WT2, classweight=wei, Y=1)
 

@@ -14,6 +14,11 @@
   "accuracy,(TP+TN)/(TP+TN+FN+FP)":"精确率、准确率",
   "P,TP/(TP+FP)":"精准率、查准率",
   "R,TP/(TP+FN)":"召回率、查全率、真正例率",
+<<<<<<< HEAD
+=======
+  "SpO2 and SaO2":"SpO2 is an estimate of arterial oxygen saturation, or SaO2,
+  which refers to the amount of oxygenated haemoglobin in the blood."
+>>>>>>> 64ea66943e918df50cb571568e6015bfa4e2388e
 
 
 

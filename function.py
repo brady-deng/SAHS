@@ -261,12 +261,44 @@ def time2ind(time,timeind):
         ind = []
         for item in timeind:
             temp = np.where(time == item)
-            temp = temp[0][0]
-            ind.append(temp)
+            if len(temp[0]) > 0:
+                temp = temp[0][0]
+                ind.append(temp)
+            else:
+                continue
         ind = np.array(ind)
         indroi = ind
 
     return indroi
+def timetoind(time,timeind,flag):
+    #time，时间序列
+    #timeind，时间索引
+    #返回的是序列索引
+
+    if type(timeind) == np.int64:
+        temp = np.where(time == timeind)
+        temp = temp[0][0]
+        ind = temp
+        indroi = ind
+    else:
+        ind = []
+        for item in timeind:
+            while(1):
+                temp = np.where(time == item)
+                if len(temp[0]) > 0:
+                    temp = temp[0][0]
+                    ind.append(temp)
+                    break
+                else:
+                    if flag == 1:
+                        item = item+1
+                    else:
+                        item = item-1
+        ind = np.array(ind)
+        indroi = ind
+
+    return indroi
+
 def roidetect(label,time):
     #label，待检测标签
     #time，标签对应的时间序列
@@ -315,7 +347,7 @@ def prefilter(label,time,labelpre,thredur,threint):
     timeroi, temps, tempe = roidetect(labelpre, time)
     labelpre = durmerge(labelpre,time,timeroi,temps,tempe,thredur)
     return labelpre
-def mapwindow(WT1,WT2,ind1,ind2):
+def mapwindow(WT1,WT2,ind1,ind2,T):
     #############################
     #WT1,窗口1的宽度
     #WT2，窗口2的宽度
@@ -334,10 +366,18 @@ def mapwindow(WT1,WT2,ind1,ind2):
     tempe.append(len(tempob))
     tempe = np.array(tempe)
     temps = np.array(temps)
-    mape = ind1[tempe]+WT1-WT2
-    maps = ind1[temps]
-    temps = time2ind(ind2,maps)
-    tempe = time2ind(ind2,mape)
+    mape = ind1[tempe]+WT1-WT2+T
+    maps = ind1[temps]-T
+    # temph = np.where(maps>=0)
+    for count in range(len(mape)):
+        if maps[count] < ind2.min():
+            maps[count] = ind2.min()
+        if mape[count] > ind2.max():
+            mape[count] = ind2.max()
+    # maps = maps[np.where(maps>=ind2.min())]
+    # mape = mape[np.where(mape<=ind2.max())]
+    temps = timetoind(ind2,maps,1)
+    tempe = timetoind(ind2,mape,0)
     # temps = []
     # tempe = []
     # for i in range(len(mape)):
@@ -584,7 +624,7 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
             ob1.append(res)
             ob2.append(resave)
             ob3.append(clfob)
-            ob4.append(resave[1,11]+resave[1,12])
+            ob4.append(resave[1,9]+resave[1,10])
         ob4 = np.array(ob4)
         ind_best = ob4.argmax()
         resob.append([ob2[ind_best][0],ob3[ind_best]])
@@ -824,7 +864,7 @@ def casdata(data1, label1, data2, label2, timeind1,timeind2,WT1, WT2, P):
         labeltest1.append(label1[ind])
         timetest1.append(timeind1[ind])
         # indtest2 = mapwindow(WT1,WT2,timetest1[i],timeind2)
-        indtest2 = mapwindow(WT1, WT2, timeind1[ind], timeind2)
+        indtest2 = mapwindow(WT1, WT2, timeind1[ind], timeind2,0)
         ind2 = np.zeros(len(data2), dtype=bool)
         ind2[indtest2] = True
         datatest2.append(data2[ind2])
@@ -1076,7 +1116,8 @@ def clfcastest(clfs, data, label, timeind1,data2, label2,timeind2, sust, Y,WT1,W
     temppre = prefilter(label,timeind1,temppre,WT1,5)
     timeroi, temps, tempe = roidetect(temppre, timeind1)
     if len(timeroi)!=0:
-        indtest = mapwindow(WT1, WT2,  timeroi, timeind2)
+        indtest = mapwindow(WT1, WT2,  timeroi, timeind2,10)
+        indtest = indtest.astype(int)
         #在级联分类器1的预测结果基础上寻找级联分类器2的输入
         ind1 = []   #ind1，60s数据测试性能
         ind1.append(accuracy_score(label, temppre))
