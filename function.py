@@ -590,7 +590,7 @@ def clfcasopt(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2, classweig
             ob1.append(res)
             ob2.append(resave)
             ob3.append(clfob)
-            ob4.append(resave[1,11]+resave[1,12])
+            ob4.append(resave[1,9]+resave[1,10])
         ob4 = np.array(ob4)
         ind_best = ob4.argmax()
         resob.append([ob2[ind_best][0],ob3[ind_best]])
