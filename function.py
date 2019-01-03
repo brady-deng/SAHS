@@ -118,6 +118,40 @@ def clfloadtest(data, label, data2, label2, timeind1,timeind2,N,WT1,WT2,Y=0):
         resmat = np.zeros([int(1 / P) + 1, 22])
 
         for k in range(int(1 / P)):
+            #########################################
+            # 只使用完全正常与完全异常的片段进行训练，结果不理想，实际上丧失了
+            # 对边界处这种易混淆的数据的训练学习过程
+            # tempind = np.where(labeltrain1[k] == 2)
+            # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            # tempind = np.where(labeltrain2[k] == 2)
+            # datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
+            # labeltrain2[k] = np.delete(labeltrain2[k], tempind)
+            # tempind = np.where(labeltest1[k] == 2)
+            # labeltest1[k][tempind] = 0
+            # tempind = np.where(labeltest2[k] == 2)
+            # labeltest2[k][tempind] = 0
+            ##########################################
+            # 使标签中的2变到0
+            labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+            labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            ###########################################
+            # 2号分类器使用易混淆的数据进行训练
+            # 将测试集中的2号标签全部变为0
+            # labeltest1[k][np.where(labeltest1[k] == 2)] = 0
+            # labeltest2[k][np.where(labeltest2[k] == 2)] = 0
+            # # 将训练集中的0号标签删除，只使用易混淆的2号标签与1号标签数据进行训练
+            # tempind = np.where(labeltrain2[k] == 0)
+            # datatrain2[k] = np.delete(datatrain2[k], tempind, axis=0)
+            # labeltrain2[k] = np.delete(labeltrain2[k], tempind)
+            # labeltrain2[k][np.where(labeltrain2[k] == 2)] = 0
+            # # tempind = np.where(labeltrain1[k] == 0)
+            # # datatrain1[k] = np.delete(datatrain1[k],tempind,axis = 0)
+            # # labeltrain1[k] = np.delete(labeltrain1[k],tempind)
+            # labeltrain1[k][np.where(labeltrain1[k] == 2)] = 0
+
             # clfs, num1, num2 = clfcastrain(["Ran","Ran"], datatrain1[k], labeltrain1[k], datatrain2[k], labeltrain2[k],
             #                                0, 0, ind, classweight)  #返回的是训练好的级联分类器，训练样本的阳性样本数、阴性样本数
             num2 = labeltrain1[k].sum()

@@ -1,6 +1,8 @@
 {
   "ODI":"oxygen desaturation index, which is the total sum of oxygen desaturation
-  events per hour",
+  events per hour
+  the number of times per hour of sleep that the blood's oxygen level drop by a
+  certain degree from baseline",
   "PR":"pulse rate",
   "detection rate":"检出率",
   "false positive rate":"误检率",
@@ -12,7 +14,7 @@
   "accuracy,(TP+TN)/(TP+TN+FN+FP)":"精确率、准确率",
   "P,TP/(TP+FP)":"精准率、查准率",
   "R,TP/(TP+FN)":"召回率、查全率、真正例率",
-  
+
 
 
 
