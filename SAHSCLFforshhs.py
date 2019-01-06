@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler,StandardScaler,Normalizer
 import pandas as pd
 import json
 import datetime
+import os
 
 if __name__ == '__main__':
     ################################
@@ -45,6 +46,10 @@ if __name__ == '__main__':
 #926
 #########################
     # 级联分类器K折交叉训练
+    path = input('Please input the path of features you want to train:')
+    csvpath = path+'*.csv'
+    feaname = os.listdir(csvpath)
+
     N = int(input('Please input the index of the subjects you want to train and test:'))
     WT1 = int(input('Please input the length of window1:'))
     WT2 = int(input('Please input the length of window2:'))
